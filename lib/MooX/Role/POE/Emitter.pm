@@ -700,7 +700,8 @@ L<MooX::Role::Pluggable> for details on plugins and argument modification.
 
 =head3 Session event unregistration
 
-An external Session can unregister using the same syntax as above:
+An external Session can unregister subscribed events using the same syntax 
+as above:
 
   $poe_kernel->post( $emitter->session_id,
     'unsubscribe',

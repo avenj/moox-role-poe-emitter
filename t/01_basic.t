@@ -99,7 +99,7 @@ sub _start {
   my $emitter = MyEmitter->new;
   my $sess_id;
   ok( $sess_id = $emitter->session_id, 'session_id()' );
-  $poe_kernel->post( $sess_id, 'register' );
+  $poe_kernel->post( $sess_id, 'subscribe' );
   ## Test process()
   $emitter->process( 'things', 1 );
   ## Test emit()
