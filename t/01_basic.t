@@ -1,5 +1,8 @@
-use Test::More tests => 10;
+use Test::More tests => 12;
 use strict; use warnings FATAL => 'all';
+
+## FIXME
+##  test delay timers
 
 use POE;
 
@@ -16,7 +19,7 @@ use POE;
 
   use Moo;
 
-  with 'MooX::Role::Pluggable';
+  with 'MooX::Role::POE::Emitter';
 
   sub BUILD {
     my ($self) = @_;
@@ -35,6 +38,8 @@ use POE;
     );
 
     $self->_start_emitter;
+
+    $self->yield('subscribe', 'stuff');
   }
 
   sub emitter_started {
@@ -88,16 +93,17 @@ sub _start {
   my $sess_id;
   ok( $sess_id = $emitter->session_id, 'session_id()' );
   $poe_kernel->post( $sess_id, 'register' );
+  ## Test process()
+  $emitter->process( 'things', 1 );
+  ## Test emit()
+  $emitter->emit( 'test_emit', 1 );
+  $emitter->emit( 'stuff', 'test' );
 }
 
 sub emitted_registered {
   ## Test 'registered' ev
+  pass("listener got emitted_registered");
   isa_ok( $_[ARG0], 'MyEmitter' );
-  ## Test process()
-  $_[ARG0]->process( 'things', 1 );
-  ## Test emit()
-  $_[ARG0]->emit( 'test_emit', 1 );
-  $_[ARG0]->emit( 'stuff', 'test' );
 }
 
 sub emitted_test_emit {

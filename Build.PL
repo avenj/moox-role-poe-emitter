@@ -32,14 +32,14 @@ my $build = Module::Build->new(
     'strictures'                   => 1,
 
     'Moo'                          => 1,
-    'Moo::Role'                    => 0,
+    'MooX::Role::Pluggable'        => 0,
     'MooX::Types::MooseLike::Base' => '0.15',
+
     'namespace::clean'             => '0.23',
+
     'POE'                          => 0,
+
     'Try::Tiny'                    => 0,
-
-
-    'MooX::Role::Pluggable'   => 0,
   },
 );
 
