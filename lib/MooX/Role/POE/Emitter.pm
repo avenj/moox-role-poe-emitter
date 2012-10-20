@@ -523,14 +523,7 @@ sub _p_emitter_unregister {
   } ## EV
 }
 
-no warnings 'void';
-q[
- <tberman> who wnats to sing a song with me?
- <tberman> its the i hate php song
- * rac adds a stanza to tberman's song about braindead variable scoping
-   that just made forums search return a bunch of false positives when
-   you search for posts by poster and return by topics
-];
+1;
 
 
 =pod
@@ -651,7 +644,7 @@ Set via B<set_alias>
 =head4 event_prefix
 
 B<event_prefix> is prepended to notification events before they are
-dispatched to registered sessions. It is also used for the plugin 
+dispatched to listening sessions. It is also used for the plugin 
 pipeline's internal events; see L<MooX::Role::Pluggable/_pluggable_event> 
 for details.
 
@@ -723,7 +716,7 @@ L</event_prefix>. See L</"Session event subscription"> and L</"emit">
 
 =head3 Events delivered to this session
 
-The emitter's L<POE::Session>> provides a '_default' handler that 
+The emitter's L<POE::Session> provides a '_default' handler that 
 redispatches unknown POE-delivered events to L</process> 
 (except for events prefixed with '_', which are reserved).
 
@@ -744,7 +737,11 @@ class:
 
 =head2 EAT values
 
-FIXME summarize our behavior, link back to Role::Pluggable details
+L<MooX::Role::Pluggable> uses C<EAT_*> constants to indicate event 
+lifetime. If a plugin in the pipeline returns EAT_CLIENT or EAT_ALL, events 
+are not dispatched to subscribed listening sessions.
+
+See L<MooX::Role::Pluggable> for details.
 
 =head3 NOTIFY events
 
@@ -801,17 +798,26 @@ event dispatch.
 
 =head3 timer
 
-FIXME
+  my $alarm_id = $self->timer(
+    $delayed_seconds,
+    $event,
+    @args
+  );
+
+Set a timer in the context of the emitter's L<POE::Session>. Returns the 
+POE alarm ID.
 
 =head3 timer_del
 
-FIXME
+  $self->timer_del( $alarm_id );
+
+Clears a pending L</timer>.
 
 =head1 AUTHOR
 
 Jon Portnoy <avenj@cobaltirc.org>
 
-Based largely on L<POE::Component::Syndicator>-0.06 by BINGOS, HINRIK, 
+Derived from L<POE::Component::Syndicator>-0.06 by BINGOS, HINRIK, 
 APOCAL et al. That will probably do you for non-Moo(se) use cases; I 
 needed something cow-like that worked with L<MooX::Role::Pluggable>.
 
