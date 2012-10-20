@@ -530,7 +530,7 @@ sub _p_emitter_unregister {
 
 =head1 NAME
 
-MooX::Role::POE::Emitter - Pluggable POE event emitter Moo::Role
+MooX::Role::POE::Emitter - Pluggable POE event emitter role for cows
 
 =head1 SYNOPSIS
 
