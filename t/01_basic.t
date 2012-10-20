@@ -1,8 +1,5 @@
-use Test::More tests => 12;
+use Test::More tests => 13;
 use strict; use warnings FATAL => 'all';
-
-## FIXME
-##  test delay timers
 
 use POE;
 
@@ -28,12 +25,14 @@ use POE;
 
     $self->set_object_states(
       [
-        $self => [
-          'emitter_started',
-          'emitter_stopped',
-          'shutdown',
-          'emitted_stuff',
-        ],
+        $self => [ qw/
+          emitter_started
+          emitter_stopped
+          shutdown
+          emitted_stuff
+          timed
+          timed_fail
+        / ],
       ],
     );
 
@@ -70,6 +69,15 @@ use POE;
     is( $$first, 1, "P_things had expected args" );
   }
 
+
+  sub timed {
+    pass("timed event fired");
+  }
+
+  sub timed_fail {
+    fail("timer should have been deleted");
+  }
+
 }
 
 POE::Session->create(
@@ -81,7 +89,6 @@ POE::Session->create(
       emitted_registered
 
       emitted_test_emit
-
     / ],
   ],
 );
@@ -98,6 +105,11 @@ sub _start {
   ## Test emit()
   $emitter->emit( 'test_emit', 1 );
   $emitter->emit( 'stuff', 'test' );
+
+  my $alarm_id = $emitter->timer( 0, 'timed' );
+
+  my $todel = $emitter->timer( 1, 'timed_fail' );
+  $emitter->timer_del($todel);
 }
 
 sub emitted_registered {

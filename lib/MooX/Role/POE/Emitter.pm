@@ -129,6 +129,9 @@ sub _start_emitter {
       $self => [ qw/
         __emitter_notify
 
+        __emitter_timer_set
+        __emitter_timer_del
+
         _emitter_sigdie
       / ],
 
@@ -163,11 +166,19 @@ sub timer {
     unless defined $time
     and defined $event;
 
-  my $alarm_id = $poe_kernel->delay_set($event, $time, @args);
+  $self->call( '__emitter_timer_set', $time, $event, @args )
+}
+
+sub __emitter_timer_set {
+  my ($kernel, $self)       = @_[KERNEL, OBJECT];
+  my ($time, $event, @args) = @_[ARG0 .. $#_];
+
+  my $alarm_id = $poe_kernel->delay_set( $event, $time, @args );
 
   $self->emit( $self->event_prefix . 'timer_set',
     $alarm_id,
     $event,
+    $time,
     @args
   ) if $alarm_id;
 
@@ -179,6 +190,12 @@ sub timer_del {
 
   confess "timer_del() expects an alarm ID"
     unless defined $alarm_id;
+
+  $self->call( '__emitter_timer_del', $alarm_id );
+}
+
+sub __emitter_timer_del {
+  my ($kernel, $self, $alarm_id) = @_[KERNEL, OBJECT, ARG0];
 
   if ( my @deleted = $poe_kernel->alarm_remove($alarm_id) ) {
     my ($event, undef, $params) = @deleted;
@@ -320,7 +337,7 @@ sub __emitter_notify {
   my $prefix = $self->event_prefix;
 
   ## May have event_prefix (such as $prefix.'plugin_error')
-  substr($event, 0, $prefix, '')
+  substr($event, 0, length($prefix), '')
     if index($event, $prefix) == 0;
 
   my %sessions;
