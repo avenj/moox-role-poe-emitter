@@ -359,7 +359,7 @@ sub __emitter_notify {
   $kernel->call( $_[SESSION], $meth, @args )
     if delete $sessions{ $_[SESSION]->ID };
 
-  ## Dispatched to N_$event after Sessions have been notified:
+  ## Dispatched to N_$event after our Session has been notified:
   my $eat = $self->_pluggable_process( 'NOTIFY', $event, \@args );
 
   unless ($eat == EAT_ALL) {

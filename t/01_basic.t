@@ -1,4 +1,4 @@
-use Test::More tests => 19;
+use Test::More tests => 20;
 use strict; use warnings FATAL => 'all';
 require_ok('MooX::Role::Pluggable::Constants');
 use POE;
@@ -94,13 +94,20 @@ use POE;
     my ($self, $core) = splice @_, 0, 2;
     pass("Plugin got Emitter_register");
     isa_ok( $core, 'MyEmitter' );
-    $core->subscribe( $self, 'NOTIFY', 'stuff' );
+    $core->subscribe( $self, 'NOTIFY', 'all' );
     EAT_NONE
   }
+
   sub Emitter_unregister {
     pass("Plugin got Emitter_unregister");
     EAT_NONE
   }
+
+  sub N_eatclient {
+    pass("Plugin got N_eatclient");
+    EAT_CLIENT
+  }
+
   sub N_stuff {
     my ($self, $core) = splice @_, 0, 2;
     my $arg = ${ $_[0] };
@@ -120,6 +127,7 @@ POE::Session->create(
       emitted_registered
 
       emitted_test_emit
+      emitted_eatclient
     / ],
   ],
 );
@@ -139,6 +147,7 @@ sub _start {
   ## Test emit()
   $emitter->emit( 'test_emit', 1 );
   $emitter->emit( 'stuff', 'test' );
+  $emitter->emit_now( 'eatclient' );
 
   my $alarm_id = $emitter->timer( 0, 'timed' );
 
@@ -156,4 +165,8 @@ sub emitted_test_emit {
   ## emit() received
   is( $_[ARG0], 1, 'emitted_test()' );
   $poe_kernel->post( $_[SENDER], 'shutdown' );
+}
+
+sub emitted_eatclient {
+  fail("Should not have received EAT_CLIENT event");
 }
