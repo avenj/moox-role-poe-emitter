@@ -1,6 +1,6 @@
-use Test::More tests => 13;
+use Test::More tests => 19;
 use strict; use warnings FATAL => 'all';
-
+require_ok('MooX::Role::Pluggable::Constants');
 use POE;
 
 {
@@ -59,6 +59,7 @@ use POE;
 
   sub emitted_stuff {
     my ($kernel, $self, $arg) = @_[KERNEL, OBJECT, ARG0];
+    pass("Got emitted_stuff");
     cmp_ok($arg, 'eq', 'test', 'emitted_stuff has correct argument' );
   }
 
@@ -80,6 +81,36 @@ use POE;
 
 }
 
+{
+  package
+    MyPlugin;
+  use strict; use warnings;
+  use Test::More;
+  use MooX::Role::Pluggable::Constants;
+
+  sub new { bless [], shift }
+
+  sub Emitter_register {
+    my ($self, $core) = splice @_, 0, 2;
+    pass("Plugin got Emitter_register");
+    isa_ok( $core, 'MyEmitter' );
+    $core->subscribe( $self, 'NOTIFY', 'stuff' );
+    EAT_NONE
+  }
+  sub Emitter_unregister {
+    pass("Plugin got Emitter_unregister");
+    EAT_NONE
+  }
+  sub N_stuff {
+    my ($self, $core) = splice @_, 0, 2;
+    my $arg = ${ $_[0] };
+    pass("Plugin got N_stuff");
+    cmp_ok($arg, 'eq', 'test', 'N_stuff correct argument' );
+    EAT_NONE
+  }
+}
+
+
 POE::Session->create(
   package_states => [
     main => [ qw/
@@ -100,6 +131,9 @@ sub _start {
   my $sess_id;
   ok( $sess_id = $emitter->session_id, 'session_id()' );
   $poe_kernel->post( $sess_id, 'subscribe' );
+
+  $emitter->plugin_add( 'MyPlugin', MyPlugin->new );
+
   ## Test process()
   $emitter->process( 'things', 1 );
   ## Test emit()

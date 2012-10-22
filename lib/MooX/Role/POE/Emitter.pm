@@ -1,5 +1,5 @@
 package MooX::Role::POE::Emitter;
-our $VERSION = '0.01_01';
+our $VERSION = '0.02_01';
 
 use Moo::Role;
 
@@ -536,6 +536,7 @@ MooX::Role::POE::Emitter - Pluggable POE event emitter role for cows
 
 =head1 SYNOPSIS
 
+  ## A POE::Session that can broadcast events to listeners:
   package My::EventEmitter;
 
   use POE;
@@ -584,7 +585,7 @@ MooX::Role::POE::Emitter - Pluggable POE event emitter role for cows
     ## Could load plugins, do initialization, etc.
   }
 
-
+  ## A listening POE::Session:
   package My::Listener;
   use POE;
 
