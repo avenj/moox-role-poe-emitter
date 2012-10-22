@@ -30,6 +30,7 @@ use POE;
           emitter_stopped
           shutdown
           emitted_stuff
+          emitted_eatclient
           timed
           timed_fail
         / ],
@@ -38,10 +39,11 @@ use POE;
 
     $self->_start_emitter;
 
-    $self->yield('subscribe', 'stuff');
+    $self->yield('subscribe', 'stuff' );
   }
 
   sub emitter_started {
+    my ($kernel, $self) = @_[KERNEL, OBJECT];
     pass("Emitter started");
   }
 
