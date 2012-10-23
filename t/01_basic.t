@@ -62,6 +62,7 @@ use POE;
     my ($kernel, $self, $arg) = @_[KERNEL, OBJECT, ARG0];
     pass("Got emitted_stuff");
     cmp_ok($arg, 'eq', 'test', 'emitted_stuff has correct argument' );
+    $self->yield('subscribe', 'test');
   }
 
   sub P_things {

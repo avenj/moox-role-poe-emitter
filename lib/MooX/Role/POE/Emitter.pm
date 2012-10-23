@@ -302,8 +302,8 @@ sub __decr_ses_refc {
 
 sub __get_ses_refc {
   my ($self, $sess_id) = @_;
-  $self->__emitter_reg_sessions->{$sess_id}->{refc}
-    if exists $self->__emitter_reg_sessions->{$sess_id}
+  return unless exists $self->__emitter_reg_sessions->{$sess_id};
+  $self->__emitter_reg_sessions->{$sess_id}->{refc} || 0
 }
 
 sub __reg_ses_id {
@@ -484,8 +484,8 @@ sub _p_emitter_register {
     ## Make sure registered session hangs around
     ##  (until _unregister or shutdown)
     $kernel->refcount_increment( $s_id, 'Emitter running' )
-      if not $self->__get_ses_refc($s_id)
-      and $s_id ne $self->session_id ;
+      unless $s_id eq $self->session_id
+      or $self->__get_ses_refc($s_id);
 
     $self->__incr_ses_refc( $s_id );
   }
