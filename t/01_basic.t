@@ -30,7 +30,6 @@ use POE;
           emitter_stopped
           shutdown
           emitted_stuff
-          emitted_eatclient
           timed
           timed_fail
         / ],
