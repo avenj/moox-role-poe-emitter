@@ -114,14 +114,14 @@ sub _start_emitter {
     object_states => [
 
       $self => {
-        '_start'           => '_p_emitter_start',
-        '_stop'            => '_p_emitter_stop',
-        'shutdown_emitter' => '_p_shutdown_emitter',
+        '_start'           => '__emitter_start',
+        '_stop'            => '__emitter_stop',
+        'shutdown_emitter' => '__shutdown_emitter',
 
-        'register'    => '_p_emitter_register',
-        'subscribe'   => '_p_emitter_register',
-        'unregister'  => '_p_emitter_unregister',
-        'unsubscribe' => '_p_emitter_unregister',
+        'register'    => '__emitter_register',
+        'subscribe'   => '__emitter_register',
+        'unregister'  => '__emitter_unregister',
+        'unsubscribe' => '__emitter_unregister',
 
         'emit'        => '__emitter_notify',
 
@@ -373,7 +373,7 @@ sub __emitter_notify {
     if $event eq 'shutdown';
 }
 
-sub _p_emitter_start {
+sub __emitter_start {
   ## _start handler
   my ($kernel, $self)    = @_[KERNEL, OBJECT];
   my ($session, $sender) = @_[SESSION, SENDER];
@@ -433,7 +433,7 @@ sub _emitter_sigdie {
   $kernel->sig_handled;
 }
 
-sub _p_emitter_stop {
+sub __emitter_stop {
   ## _stop handler
   my ($kernel, $self) = @_[KERNEL, OBJECT];
 
@@ -449,7 +449,7 @@ sub _shutdown_emitter {
   1
 }
 
-sub _p_shutdown_emitter {
+sub __shutdown_emitter {
   my ($kernel, $self) = @_[KERNEL, OBJECT];
 
   $kernel->alarm_remove_all;
@@ -466,7 +466,7 @@ sub _p_shutdown_emitter {
 
 
 ## Handlers for listener sessions.
-sub _p_emitter_register {
+sub __emitter_register {
   my ($kernel, $self, $sender) = @_[KERNEL, OBJECT, SENDER];
   my @events = @_[ARG0 .. $#_];
 
@@ -493,7 +493,7 @@ sub _p_emitter_register {
   $kernel->post( $s_id, $self->event_prefix . "registered", $self )
 }
 
-sub _p_emitter_unregister {
+sub __emitter_unregister {
   my ($kernel, $self, $sender) = @_[KERNEL, OBJECT, SENDER];
   my @events = @_[ARG0 .. $#_];
 
