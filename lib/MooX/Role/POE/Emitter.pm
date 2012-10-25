@@ -1,5 +1,5 @@
 package MooX::Role::POE::Emitter;
-our $VERSION = '0.03';
+our $VERSION = '0.03_01';
 
 use Moo::Role;
 
@@ -673,7 +673,8 @@ Set via B<set_object_states>
 
 =head4 session_id
 
-B<session_id> is our emitter's L<POE::Session> ID.
+B<session_id> is our emitter's L<POE::Session> ID, set when our Session is 
+started via L</"_start_emitter">.
 
 =head3 _start_emitter
 
