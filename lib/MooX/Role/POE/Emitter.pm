@@ -1,5 +1,5 @@
 package MooX::Role::POE::Emitter;
-our $VERSION = '0.02_01';
+our $VERSION = '0.03';
 
 use Moo::Role;
 
@@ -545,7 +545,6 @@ MooX::Role::POE::Emitter - Pluggable POE event emitter role for cows
 
   sub spawn {
     my ($self, %args) = @_;
-    $args{lc $_} = delete $args{$_} for keys %args;
 
     $self->set_object_states(
       [
@@ -676,13 +675,11 @@ Set via B<set_object_states>
 
 B<session_id> is our emitter's L<POE::Session> ID.
 
-
 =head3 _start_emitter
 
 B<_start_emitter()> should be called on our object to spawn the actual
 L<POE::Session>. It takes no arguments and should be called after the 
 object has been configured.
-
 
 =head2 Listening sessions
 
@@ -698,8 +695,9 @@ normal POE event dispatch by sending a C<subscribe>:
 
 Listening sessions are consumers; they cannot modify event arguments in 
 any meaningful way, and will receive arguments as-normal (in @_[ARG0 .. 
-$#_] like any other POE state). Plugins operate differently -- see 
-L<MooX::Role::Pluggable> for details on plugins and argument modification.
+$#_] like any other POE state). Plugins operate differently and receive 
+references to arguments that can be modified -- see 
+L<MooX::Role::Pluggable> for details.
 
 =head3 Session event unregistration
 
@@ -715,8 +713,17 @@ as above:
 
 =head3 Events delivered to listeners
 
-Events delivered to subscribed listener sessions are prefixed with 
-L</event_prefix>. See L</"Session event subscription"> and L</"emit">
+Events are delivered to subscribed listener sessions as normal POE events, 
+with the configured L</event_prefix> prepended and arguments available via 
+C< @_[ARG0 .. $#_] > as normal.
+
+  sub emitted_my_event {
+    my ($kernel, $self) = @_[KERNEL, OBJECT];
+    my @args = @_[ARG0 .. $#_];
+    # . . .
+  }
+
+See L</"Session event subscription"> and L</"emit">
 
 =head3 Events delivered to this session
 
@@ -742,10 +749,16 @@ class:
 =head2 EAT values
 
 L<MooX::Role::Pluggable> uses C<EAT_*> constants to indicate event 
-lifetime. If a plugin in the pipeline returns EAT_CLIENT or EAT_ALL, events 
-are not dispatched to subscribed listening sessions.
+lifetime.
 
-See L<MooX::Role::Pluggable> for details.
+If a plugin in the pipeline returns EAT_CLIENT or EAT_ALL, events 
+are not dispatched to subscribed listening sessions; a dispatched NOTIFY 
+event goes to your emitter's Session if it is subscribed to receive it, 
+then to the plugin pipeline, and finally to other subscribed listener 
+Sessions B<unless> a plugin returned EAT_CLIENT or EAT_ALL.
+
+See L</"emit"> for more on dispatch behavior and event lifetime. See 
+L<MooX::Role::Pluggable> for details regarding plugins.
 
 =head3 NOTIFY events
 
@@ -753,7 +766,7 @@ B<NOTIFY> events are intended to be dispatched asynchronously to our own
 session, any loaded plugins in the pipeline, and subscribed listening 
 sessions, respectively.
 
-See L</emit> for complete details.
+See L</emit>.
 
 =head3 PROCESS events
 
@@ -779,8 +792,11 @@ sessions (with L</event_prefix> prepended):
   ## With default event_prefix:
   $self->emit( 'my_event', @args )
   #  -> Dispatched to own session as 'emitted_my_event'
-  #  --> Dispatched to plugin pipeline as 'N_my_event'
-  #  ---> Dispatched to registered sessions as 'emitted_my_event'
+  #  -> Dispatched to plugin pipeline as 'N_my_event'
+  #  -> Dispatched to registered sessions as 'emitted_my_event'
+  #     *unless* a plugin returned EAT_CLIENT or EAT_ALL
+
+See L</"Receiving events">, L</"EAT values">
 
 =head3 emit_now
 
@@ -799,15 +815,17 @@ immediately; these are B<not> dispatched to listening sessions.
 See L<MooX::Role::Pluggable> for details on pluggable 
 event dispatch.
 
+=head2 Methods
 
-=head2 Session dispatch
+These methods provide easy proxy mechanisms for issuing POE events and 
+managing timers within the context of the emitter's L<POE::Session>.
 
 =head3 yield
 
   $self->yield( $poe_event, @args );
 
 Provides an interface to L<POE::Kernel>'s yield() method, dispatching POE 
-events  within the context of the emitter's session.
+events within the context of the emitter's session.
 
 =head3 call
 
@@ -839,6 +857,8 @@ Jon Portnoy <avenj@cobaltirc.org>
 Derived from L<POE::Component::Syndicator>-0.06 by BINGOS, HINRIK, 
 APOCAL et al. That will probably do you for non-Moo(se) use cases; I 
 needed something cow-like that worked with L<MooX::Role::Pluggable>.
+
+Licensed under the same terms as perl5
 
 =cut
 
