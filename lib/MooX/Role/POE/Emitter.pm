@@ -1,5 +1,5 @@
 package MooX::Role::POE::Emitter;
-our $VERSION = '0.03_01';
+our $VERSION = '0.04_01';
 
 use Moo::Role;
 
@@ -106,8 +106,8 @@ sub _start_emitter {
 
   my %types;
   if ( $self->has_pluggable_type_prefixes ) {
-    $types{PROCESS} = $self->pluggable_type_prefixes->{PROCESS} || 'P';
-    $types{NOTIFY}  = $self->pluggable_type_prefixes->{NOTIFY}  || 'N';
+    $types{PROCESS} = $self->pluggable_type_prefixes->{PROCESS} ||= 'P';
+    $types{NOTIFY}  = $self->pluggable_type_prefixes->{NOTIFY}  ||= 'N';
   } else {
     %types = ( PROCESS => 'P', NOTIFY => 'N' );
   }
