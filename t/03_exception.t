@@ -1,4 +1,4 @@
-use Test::More tests => 4;
+use Test::More tests => 8;
 use Test::Exception;
 use strict; use warnings FATAL => 'all';
 
@@ -18,9 +18,15 @@ dies_ok( sub { MyEmitter->new(
 my $emitter = MyEmitter->new;
 
 dies_ok( sub { $emitter->set_object_states(
-    [ $emitter => [ '_start' ] ]
-  ) }, 'disallowed handler'
-);
+    [ $emitter => [ $_ ] ]
+  ) }, "disallowed state: $_"
+) for qw/
+  _start
+  _stop
+  _default
+  subscribe
+  unsubscribe
+/;
 
 dies_ok( sub { $emitter->timer }, 'empty timer() call' );
 dies_ok( sub { $emitter->timer_del }, 'empty timer_del() call' );

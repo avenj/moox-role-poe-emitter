@@ -278,6 +278,8 @@ sub _trigger_object_states {
     _default
     register
     unregister
+    subscribe
+    unsubscribe
   /;
 
   for (my $i=1; $i <= (scalar(@$states) - 1 ); $i+=2 ) {
@@ -372,7 +374,7 @@ sub __emitter_notify {
   my $eat = $self->_pluggable_process( 'NOTIFY', $event, \@args );
 
   unless ($eat == EAT_ALL) {
-    ## Notify registered sessions.
+    ## Notify subscribed sessions.
     $kernel->call( $_, $meth, @args )
       for keys %sessions;
   }
@@ -403,7 +405,7 @@ sub __emitter_start {
     $self->__incr_ses_refc( $s_id );
     $self->__reg_ses_id( $s_id );
 
-    ## register parent session for all notification events.
+    ## subscribe parent session to all notification events.
     $self->__emitter_reg_events->{ 'all' }->{ $s_id } = 1;
 
     ## Detach child session.
