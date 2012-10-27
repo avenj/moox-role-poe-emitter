@@ -44,14 +44,17 @@
    "provides" : {
       "MooX::Role::POE::Emitter" : {
          "file" : "lib/MooX/Role/POE/Emitter.pm",
-         "version" : "0.06"
+         "version" : "0.06_01"
       }
    },
-   "release_status" : "stable",
+   "release_status" : "testing",
    "resources" : {
       "license" : [
          "http://dev.perl.org/licenses/"
-      ]
+      ],
+      "repository" : {
+         "url" : "git://eris.cobaltirc.org/moox-role-poe-emitter.git"
+      }
    },
-   "version" : "0.06"
+   "version" : "0.06_01"
 }

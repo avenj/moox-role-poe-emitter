@@ -41,6 +41,12 @@ my $build = Module::Build->new(
 
     'Try::Tiny'                    => 0,
   },
+
+  meta_merge => {
+    resources => {
+      repository => 'git://eris.cobaltirc.org/moox-role-poe-emitter.git',
+    },
+  },
 );
 
 $build->create_build_script;
