@@ -133,7 +133,7 @@ sub _start_emitter {
 
         'emit'        => '__emitter_notify',
 
-        '_default'    => '_emitter_default',
+        '_default'    => '__emitter_disp_default',
       },
 
       $self => [ qw/
@@ -414,9 +414,24 @@ sub __emitter_start {
   $self
 }
 
-sub _emitter_default {
+sub __emitter_disp_default {
   my ($kernel, $self) = @_[KERNEL, OBJECT];
   my ($event, $args) = @_[ARG0, ARG1];
+
+  if (ref $event eq 'CODE') {
+    ## Anonymous coderef callback.
+    ## Cute trick from dngor.
+    splice @_, ARG0, 2, @$args;
+    $_[STATE] = $event;
+    goto $event
+  } else {
+    goto &_emitter_default
+  }
+}
+
+sub _emitter_default {
+  my ($kernel, $self) = @_[KERNEL, OBJECT];
+  my ($event, $args)  = @_[ARG0, ARG1];
 
   ## Session received an unknown event.
   ## Dispatch it to any appropriate P_$event handlers.
@@ -755,19 +770,21 @@ The emitter's L<POE::Session> provides a '_default' handler that
 redispatches unknown POE-delivered events to L</process> 
 (except for events prefixed with '_', which are reserved).
 
-As a side-effect, subscribing the 'self' Session to some events (or 'all') 
-will cause unhandled L</NOTIFY events> to be redispatched as L</PROCESS 
-events>.
-
-To change this behavior, override the method '_emitter_default' in your 
-class:
+You can change this behavior by overriding '_emitter_default' -- here's a 
+direct adaption of the example from L<POE::Component::Syndicator>:
 
   use Moo;
+  use POE;
   with 'MooX::Role::POE::Emitter';
   around '_emitter_default' => sub {
     my $orig = shift;
-    ## Drop unhandled events on the floor, for example.
-    return
+    my ($kernel, $self) = @_[KERNEL, OBJECT];
+    my ($event, $args)  = @_[ARG0, ARG1];
+
+    ## process(), then do something else, for example
+    return if $self->process( $event, @$args ) == EAT_ALL;
+
+    . . .
   };
 
 =head2 EAT values
@@ -848,8 +865,15 @@ managing timers within the context of the emitter's L<POE::Session>.
 
   $self->yield( $poe_event, @args );
 
-Provides an interface to L<POE::Kernel>'s yield() method, dispatching POE 
-events within the context of the emitter's session.
+Provides an interface to L<POE::Kernel>'s yield/post() method, dispatching 
+POE events within the context of the emitter's session.
+
+The event can be either a named event/state or an anonymous coderef:
+
+  $self->yield( sub {
+    my ($kernel, @args) = @_[KERNEL, ARG0 .. $#_];
+    . . .
+  }, $some, $args );
 
 =head3 call
 
@@ -868,11 +892,22 @@ The synchronous counterpart to L</yield>.
 Set a timer in the context of the emitter's L<POE::Session>. Returns the 
 POE alarm ID.
 
+The event can be either a named event/state or an anonymous coderef (see 
+L</yield>).
+
+A prefixed (L</event_prefix>) 'timer_set' event is emitted when a timer is 
+set. Arguments are the alarm ID, the event name or coderef, the delay time, 
+and any event parameters, respectively.
+
 =head3 timer_del
 
   $self->timer_del( $alarm_id );
 
 Clears a pending L</timer>.
+
+A prefixed (L</event_prefix>) 'timer_deleted' event is emitted when a timer 
+is deleted. Arguments are the removed alarm ID, the event name or coderef, 
+and any event parameters, respectively.
 
 =head1 AUTHOR
 
