@@ -275,6 +275,7 @@ sub _trigger_object_states {
   my @disallowed = qw/
     _start
     _stop
+    _default
     register
     unregister
   /;
@@ -420,11 +421,12 @@ sub __emitter_disp_default {
 
   if (ref $event eq 'CODE') {
     ## Anonymous coderef callback.
-    ## Cute trick from dngor.
+    ## Cute trick from dngor:
     splice @_, ARG0, 2, @$args;
     $_[STATE] = $event;
     goto $event
   } else {
+    ## Stupid, but we can retain compat w/ _emitter_default override:
     goto &_emitter_default
   }
 }
