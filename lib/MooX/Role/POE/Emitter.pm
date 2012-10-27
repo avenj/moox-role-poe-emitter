@@ -659,12 +659,15 @@ it is derived from L<POE::Component::Syndicator> by BINGOS, HINRIK, APOCAL
 et al, but with more cows ;-)
 
 Consuming this role gives your class a L<POE::Session> capable of 
-emitting events to loaded plugins and registered "listener" sessions. It 
-also brings in L<MooX::Role::Pluggable>, making your emitter pluggable (see the 
+emitting events to loaded plugins and registered "listener" sessions.
+
+The Emitter role consumes L<MooX::Role::Pluggable>, 
+making your emitter pluggable (see the 
 L<MooX::Role::Pluggable> documentation for plugin-related details).
 
 You do not need to create your own L<POE::Session>; calling 
 L</_start_emitter> will spawn one for you.
+You also get some useful sugar over POE event dispatch; see L</Methods>.
 
 =head2 Creating an Emitter
 
