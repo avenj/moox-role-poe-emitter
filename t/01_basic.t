@@ -1,4 +1,4 @@
-use Test::More tests => 27;
+use Test::More tests => 28;
 use strict; use warnings FATAL => 'all';
 require_ok('MooX::Role::Pluggable::Constants');
 use POE;
@@ -175,6 +175,10 @@ sub _start {
 
   my $todel = $emitter->timer( 1, 'timed_fail' );
   $emitter->timer_del($todel);
+
+  $emitter->timer( 0,
+    sub { pass("Anon coderef callback in timer") },
+  );
 }
 
 sub emitted_registered {

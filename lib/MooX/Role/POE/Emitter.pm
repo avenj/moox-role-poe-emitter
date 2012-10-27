@@ -1,5 +1,5 @@
 package MooX::Role::POE::Emitter;
-our $VERSION = '0.04_01';
+our $VERSION = '0.05_01';
 
 use Moo::Role;
 
@@ -428,7 +428,7 @@ sub __emitter_disp_default {
     $_[STATE] = $event;
     goto $event
   } else {
-    ## Stupid, but we can retain compat w/ _emitter_default override:
+    ## Ugly? Yes, but we can retain compat w/ _emitter_default override:
     goto &_emitter_default
   }
 }
@@ -723,6 +723,11 @@ started via L</"_start_emitter">.
 B<_start_emitter()> should be called on our object to spawn the actual
 L<POE::Session>. It takes no arguments and should be called after the 
 object has been configured.
+
+=head3 _shutdown_emitter
+
+B<_shutdown_emitter()> must be called to terminate the Emitter's 
+L<POE::Session>.
 
 =head2 Listening sessions
 
