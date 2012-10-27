@@ -1,4 +1,4 @@
-use Test::More tests => 28;
+use Test::More tests => 29;
 use strict; use warnings FATAL => 'all';
 require_ok('MooX::Role::Pluggable::Constants');
 use POE;
@@ -168,6 +168,7 @@ sub _start {
       cmp_ok($things, 'eq', 'things', 'coderef CB arg 2 correct');
       ok(ref $l_s eq 'CODE', 'coderef CB received itself');
       isa_ok($l_k, 'POE::Kernel');
+      $_[OBJECT]->yield(sub { pass("Got 2nd coderef cb") });
     }, 'stuff', 'things'
   );
 

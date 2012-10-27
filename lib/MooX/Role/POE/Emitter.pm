@@ -21,36 +21,36 @@ with 'MooX::Role::Pluggable';
 
 
 has 'alias' => (
-  lazy => 1,
-  is   => 'ro',
-  isa  => Str,
+  lazy      => 1,
+  is        => 'ro',
+  isa       => Str,
   predicate => 'has_alias',
   writer    => 'set_alias',
   default   => sub { "$_[0]" },
 );
 
 has 'event_prefix' => (
-  lazy => 1,
-  is   => 'ro',
-  isa  => Str,
+  lazy      => 1,
+  is        => 'ro',
+  isa       => Str,
   predicate => 'has_event_prefix',
   writer    => 'set_event_prefix',
   default   => sub { "emitted_" },
 );
 
 has 'object_states' => (
-  lazy => 1,
-  is   => 'ro',
-  isa  => ArrayRef,
+  lazy      => 1,
+  is        => 'ro',
+  isa       => ArrayRef,
   predicate => 'has_object_states',
   writer    => 'set_object_states',
   trigger   => 1,
 );
 
 has 'register_prefix' => (
-  lazy => 1,
-  is   => 'ro',
-  isa  => Str,
+  lazy      => 1,
+  is        => 'ro',
+  isa       => Str,
   predicate => 'has_register_prefix',
   writer    => 'set_register_prefix',
   ## Emitter_register / Emitter_unregister
@@ -58,39 +58,44 @@ has 'register_prefix' => (
 );
 
 has 'session_id' => (
-  init_arg => undef,
-  lazy => 1,
-  is   => 'ro',
-  isa  => Defined,
+  init_arg  => undef,
+  lazy      => 1,
+  is        => 'ro',
+  isa       => Defined,
   predicate => 'has_session_id',
   writer    => 'set_session_id',
 );
 
 has 'pluggable_type_prefixes' => (
   ## Optionally remap PROCESS / NOTIFY types
-  lazy => 1,
-  is   => 'ro',
-  isa  => HashRef,
+  lazy      => 1,
+  is        => 'ro',
+  isa       => HashRef,
   predicate => 'has_pluggable_type_prefixes',
   writer    => 'set_pluggable_type_prefixes',
-  default   => sub { { PROCESS => 'P', NOTIFY => 'N' } },
+  default   => sub {
+   +{ 
+      PROCESS => 'P',
+      NOTIFY  => 'N',
+    }
+  },
 );
 
 
 has '__emitter_reg_sessions' => (
   ## ->{ $session_id } = { refc => $ref_count, id => $id };
-  lazy => 1,
-  is   => 'ro',
-  isa  => HashRef,
-  default => sub { {} },
+  lazy    => 1,
+  is      => 'ro',
+  isa     => HashRef,
+  default => sub { +{} },
 );
 
 has '__emitter_reg_events' => (
   ## ->{ $event }->{ $session_id } = 1
-  lazy => 1,
-  is   => 'ro',
-  isa  => HashRef,
-  default => sub { {} },
+  lazy    => 1,
+  is      => 'ro',
+  isa     => HashRef,
+  default => sub { +{} },
 );
 
 
@@ -126,24 +131,25 @@ sub _start_emitter {
         '_stop'            => '__emitter_stop',
         'shutdown_emitter' => '__shutdown_emitter',
 
-        'register'    => '__emitter_register',
-        'subscribe'   => '__emitter_register',
-        'unregister'  => '__emitter_unregister',
-        'unsubscribe' => '__emitter_unregister',
+        'register'         => '__emitter_register',
+        'subscribe'        => '__emitter_register',
+        'unregister'       => '__emitter_unregister',
+        'unsubscribe'      => '__emitter_unregister',
+        'emit'             => '__emitter_notify',
 
-        'emit'        => '__emitter_notify',
-
-        '_default'    => '__emitter_disp_default',
-        '__emitter_really_default' => '_emitter_default',
+        '_default'               => '__emitter_disp_default',
+        '__emitter_real_default' => '_emitter_default',
       },
 
       $self => [ qw/
+
         __emitter_notify
 
         __emitter_timer_set
         __emitter_timer_del
 
-        _emitter_sigdie
+        __emitter_sigdie
+
       / ],
 
       (
@@ -392,7 +398,7 @@ sub __emitter_start {
 
   $self->set_session_id( $session->ID );
 
-  $kernel->sig('DIE', '_emitter_sigdie' );
+  $kernel->sig('DIE', '__emitter_sigdie' );
 
   $kernel->alias_set( $self->alias );
 
@@ -425,11 +431,16 @@ sub __emitter_disp_default {
   if (ref $event eq 'CODE') {
     ## Anonymous coderef callback.
     ## Cute trick from dngor:
+    ##  - Shove arguments back into @_
+    ##    (starting at ARG0 and replacing ARG0/ARG1)
+    ##  - Set $_[STATE] to our coderef
+    ##    (callback sub can retrieve itself via $_[STATE])
+    ##  - Replace current subroutine
     splice @_, ARG0, 2, @$args;
     $_[STATE] = $event;
     goto $event
   } else {
-    $self->call( '__emitter_really_default', $event, $args );
+    $self->call( '__emitter_real_default', $event, $args );
   }
 }
 
@@ -445,7 +456,7 @@ sub _emitter_default {
     or $event =~ /^emitter_(?:started|stopped)$/ ;
 }
 
-sub _emitter_sigdie {
+sub __emitter_sigdie {
   my ($kernel, $self) = @_[KERNEL, OBJECT];
   my $exh = $_[ARG1];
 
@@ -576,7 +587,7 @@ MooX::Role::POE::Emitter - Pluggable POE event emitter role for cows
     $self->set_object_states(
       [
         $self => {
-          ## ... Add some extra handlers ...
+          ## Add some extra handlers to your Emitter
           'emitter_started' => '_emitter_started',
         },
 
@@ -659,9 +670,21 @@ L</_start_emitter> will spawn one for you.
 
 L</SYNOPSIS> contains an emitter that uses B<set_$attrib> methods to
 configure itself when C<spawn()> is called; these attribs can, of course,
-be set when your Emitter is constructed.
+be set when your Emitter is constructed:
+
+  my $emitter = MyEmitter->new(
+    alias => 'my_emitter',
+    pluggable_type_prefixes => {
+      NOTIFY  => 'Notify',
+      PROCESS => 'Proc',
+    },
+    # . . .
+  );
 
 =head3 Attributes
+
+Most of these can be altered via B<set_$attrib> methods at any time before 
+L</_start_emitter> is called.
 
 =head4 alias
 
@@ -880,12 +903,26 @@ managing timers within the context of the emitter's L<POE::Session>.
 Provides an interface to L<POE::Kernel>'s yield/post() method, dispatching 
 POE events within the context of the emitter's session.
 
-The event can be either a named event/state or an anonymous coderef:
+The event can be either a named event/state dispatched to your Emitter's 
+L<POE::Session>:
 
-  $self->yield( sub {
-    my ($kernel, @args) = @_[KERNEL, ARG0 .. $#_];
-    . . .
+  $emitter->yield( 'some_event', @args );
+
+... or an anonymous coderef, which is executed as if it were a named 
+POE state belonging to your Emitter:
+
+  $emitter->yield( sub {
+    my ($kernel, $self) = @_[KERNEL, OBJECT];
+    my @params          = @_[ARG0 .. $#_];
+
+    ## $_[STATE] is the current coderef
+    ## Yield ourselves again, for example:
+    $self->yield( $_[STATE], @new_args );
   }, $some, $args );
+
+Inside an anonymous coderef callback such as shown above, C<$_[OBJECT]> is 
+the Emitter's C<$self> object and C<$_[STATE]> contains the callback 
+coderef itself.
 
 =head3 call
 
