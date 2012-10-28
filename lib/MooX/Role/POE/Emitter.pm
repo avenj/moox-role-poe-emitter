@@ -659,8 +659,7 @@ MooX::Role::POE::Emitter - Pluggable POE event emitter role for cows
 
 This is a L<Moo::Role> for a L<POE> Observer Pattern implementation; 
 it is derived from L<POE::Component::Syndicator> by BINGOS, HINRIK, APOCAL 
-et al, but with more cows ;-) plus a few extra features and a slightly 
-faster dispatcher.
+et al, but with more cows ;-) and a few extra features.
 
 Consuming this role gives your class a L<POE::Session> capable of 
 emitting events to loaded plugins and registered "listener" sessions.
