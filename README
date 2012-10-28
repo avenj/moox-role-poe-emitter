@@ -361,6 +361,15 @@ DESCRIPTION
     timer is deleted. Arguments are the removed alarm ID, the event name or
     coderef, and any event parameters, respectively.
 
+  Moose compatibility
+    This Role is Moose-compatible as of version 0.07, but you'll need to
+    consume MooX::Role::Pluggable on its own, as far as I can tell:
+
+      package MyEmitter;
+      use Moose;
+      with 'MooX::Role::Pluggable';
+      with 'MooX::Role::POE::Emitter';
+
 AUTHOR
     Jon Portnoy <avenj@cobaltirc.org>
 
