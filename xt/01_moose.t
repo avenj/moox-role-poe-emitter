@@ -1,6 +1,12 @@
-use Test::More tests => 4;
+use Test::More tests => 5;
 use Test::Exception;
 use strict; use warnings FATAL => 'all';
+
+{
+  local $@;
+  eval { require Moose; 1 }
+    or BAIL_OUT("Test requires Moose");
+}
 
 {
   package
@@ -40,6 +46,7 @@ sub _start {
   my $emitter = new_ok( 'MyEmitter' );
   pass("Got _start");
   $poe_kernel->post( $emitter->session_id, 'subscribe' );
+  $emitter->yield(sub { pass("Anon callback") });
   $emitter->shutdown;
 }
 
