@@ -12,6 +12,7 @@ use MooX::Types::MooseLike::Base qw/:all/;
 
 use MooX::Role::Pluggable::Constants;
 
+sub E_TAG () { "Emitter Running" }
 
 ##
 use namespace::clean -except => 'meta';
@@ -45,6 +46,7 @@ has 'object_states' => (
   predicate => 'has_object_states',
   writer    => 'set_object_states',
   trigger   => 1,
+  default   => sub { [] },
 );
 
 has 'register_prefix' => (
@@ -64,6 +66,7 @@ has 'session_id' => (
   isa       => Defined,
   predicate => 'has_session_id',
   writer    => 'set_session_id',
+  default   => sub { -1 },
 );
 
 has 'pluggable_type_prefixes' => (
@@ -337,7 +340,7 @@ sub __emitter_drop_sessions {
     my $count = $self->__get_ses_refc($id);
 
     $poe_kernel->refcount_decrement(
-      $id, 'Emitter running'
+      $id, E_TAG
     ) while $count-- > 0;
 
     delete $self->__emitter_reg_sessions->{$id}
@@ -408,7 +411,7 @@ sub __emitter_start {
     ## Have a parent session.
 
     ## refcount for this session.
-    $kernel->refcount_increment( $s_id, 'Emitter running' );
+    $kernel->refcount_increment( $s_id, E_TAG );
     $self->__incr_ses_refc( $s_id );
     $self->__reg_ses_id( $s_id );
 
@@ -521,7 +524,7 @@ sub __emitter_register {
 
     ## Make sure registered session hangs around
     ##  (until _unregister or shutdown)
-    $kernel->refcount_increment( $s_id, 'Emitter running' )
+    $kernel->refcount_increment( $s_id, E_TAG )
       unless $s_id eq $self->session_id
       or $self->__get_ses_refc($s_id);
 
@@ -542,7 +545,7 @@ sub __emitter_unregister {
   EV: for my $event (@events) {
     unless (delete $self->__emitter_reg_events->{$event}->{$s_id}) {
       ## Possible we should just not give a damn?
-      warn "Cannot unregister $event for $s_id -- not registered";
+      warn "Cannot unregister $event for $s_id -- not registered\n";
       next EV
     }
 
@@ -556,7 +559,7 @@ sub __emitter_unregister {
       ## No events left for this session.
       delete $self->__emitter_reg_sessions->{$s_id};
 
-      $kernel->refcount_decrement( $s_id, 'Emitter running' )
+      $kernel->refcount_decrement( $s_id, E_TAG )
         unless $_[SESSION] == $sender;
     }
 
@@ -964,6 +967,16 @@ Clears a pending L</timer>.
 A prefixed (L</event_prefix>) 'timer_deleted' event is emitted when a timer 
 is deleted. Arguments are the removed alarm ID, the event name or coderef, 
 and any event parameters, respectively.
+
+=head2 Moose compatibility
+
+This Role is Moose-compatible as of version 0.07, but you'll need to 
+consume L<MooX::Role::Pluggable> on its own, as far as I can tell:
+
+  package MyEmitter;
+  use Moose;
+  with 'MooX::Role::Pluggable';
+  with 'MooX::Role::POE::Emitter';
 
 =head1 AUTHOR
 
