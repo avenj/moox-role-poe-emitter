@@ -1,4 +1,4 @@
-use Test::More tests => 5;
+use Test::More tests => 6;
 use Test::Exception;
 use strict; use warnings FATAL => 'all';
 
@@ -25,6 +25,7 @@ use strict; use warnings FATAL => 'all';
     my ($self) = @_;
     $self->_shutdown_emitter;
   }
+  __PACKAGE__->meta->make_immutable;
 }
 
 use POE;
@@ -44,6 +45,7 @@ $poe_kernel->run;
 
 sub _start {
   my $emitter = new_ok( 'MyEmitter' );
+  ok( $emitter->does('MooX::Role::POE::Emitter'), 'Emitter does Role' );
   pass("Got _start");
   $poe_kernel->post( $emitter->session_id, 'subscribe' );
   $emitter->yield(sub { pass("Anon callback") });
