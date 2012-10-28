@@ -53,7 +53,7 @@
          "http://dev.perl.org/licenses/"
       ],
       "repository" : {
-         "url" : "git://eris.cobaltirc.org/moox-role-poe-emitter.git"
+         "url" : "http://github.com/avenj/moox-role-poe-emitter.git"
       }
    },
    "version" : "0.06_01"

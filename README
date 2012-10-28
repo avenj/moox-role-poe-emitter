@@ -83,7 +83,8 @@ SYNOPSIS
 DESCRIPTION
     This is a Moo::Role for a POE Observer Pattern implementation; it is
     derived from POE::Component::Syndicator by BINGOS, HINRIK, APOCAL et al,
-    but with more cows ;-)
+    but with more cows ;-) plus a few extra features and a slightly faster
+    dispatcher.
 
     Consuming this role gives your class a POE::Session capable of emitting
     events to loaded plugins and registered "listener" sessions.
@@ -94,7 +95,8 @@ DESCRIPTION
 
     You do not need to create your own POE::Session; calling
     "_start_emitter" will spawn one for you. You also get some useful sugar
-    over POE event dispatch; see "Methods".
+    over POE event dispatch (such as anonymous coderef callbacks); see
+    "Methods".
 
   Creating an Emitter
     "SYNOPSIS" contains an emitter that uses set_$attrib methods to
@@ -314,12 +316,14 @@ DESCRIPTION
     state belonging to your Emitter:
 
       $emitter->yield( sub {
+        ## $_[OBJECT] is the Emitter's object:
         my ($kernel, $self) = @_[KERNEL, OBJECT];
         my @params          = @_[ARG0 .. $#_];
 
         ## $_[STATE] is the current coderef
         ## Yield ourselves again, for example:
-        $self->yield( $_[STATE], @new_args );
+        $self->yield( $_[STATE], @new_args )
+          if $some_condition;
       }, $some, $args );
 
     Inside an anonymous coderef callback such as shown above, $_[OBJECT] is

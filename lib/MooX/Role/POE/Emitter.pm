@@ -656,7 +656,8 @@ MooX::Role::POE::Emitter - Pluggable POE event emitter role for cows
 
 This is a L<Moo::Role> for a L<POE> Observer Pattern implementation; 
 it is derived from L<POE::Component::Syndicator> by BINGOS, HINRIK, APOCAL 
-et al, but with more cows ;-)
+et al, but with more cows ;-) plus a few extra features and a slightly 
+faster dispatcher.
 
 Consuming this role gives your class a L<POE::Session> capable of 
 emitting events to loaded plugins and registered "listener" sessions.
@@ -667,7 +668,8 @@ L<MooX::Role::Pluggable> documentation for plugin-related details).
 
 You do not need to create your own L<POE::Session>; calling 
 L</_start_emitter> will spawn one for you.
-You also get some useful sugar over POE event dispatch; see L</Methods>.
+You also get some useful sugar over POE event dispatch (such as anonymous 
+coderef callbacks); see L</Methods>.
 
 =head2 Creating an Emitter
 
@@ -915,12 +917,14 @@ L<POE::Session>:
 POE state belonging to your Emitter:
 
   $emitter->yield( sub {
+    ## $_[OBJECT] is the Emitter's object:
     my ($kernel, $self) = @_[KERNEL, OBJECT];
     my @params          = @_[ARG0 .. $#_];
 
     ## $_[STATE] is the current coderef
     ## Yield ourselves again, for example:
-    $self->yield( $_[STATE], @new_args );
+    $self->yield( $_[STATE], @new_args )
+      if $some_condition;
   }, $some, $args );
 
 Inside an anonymous coderef callback such as shown above, C<$_[OBJECT]> is 
@@ -967,7 +971,7 @@ Jon Portnoy <avenj@cobaltirc.org>
 
 Derived from L<POE::Component::Syndicator>-0.06 by BINGOS, HINRIK, 
 APOCAL et al. That will probably do you for non-Moo(se) use cases; I 
-needed something cow-like that worked with L<MooX::Role::Pluggable>.
+needed something cow-like that worked with L<MooX::Role::Pluggable>. 
 
 Licensed under the same terms as perl5
 
