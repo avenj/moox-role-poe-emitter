@@ -44,7 +44,7 @@ my $build = Module::Build->new(
 
   meta_merge => {
     resources => {
-      repository => 'git://eris.cobaltirc.org/moox-role-poe-emitter.git',
+      repository => 'http://github.com/avenj/moox-role-poe-emitter.git',
     },
   },
 );
