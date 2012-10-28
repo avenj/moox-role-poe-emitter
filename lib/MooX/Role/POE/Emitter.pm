@@ -39,6 +39,21 @@ has 'event_prefix' => (
   default   => sub { "emitted_" },
 );
 
+has 'pluggable_type_prefixes' => (
+  ## Optionally remap PROCESS / NOTIFY types
+  lazy      => 1,
+  is        => 'ro',
+  isa       => HashRef,
+  predicate => 'has_pluggable_type_prefixes',
+  writer    => 'set_pluggable_type_prefixes',
+  default   => sub {
+   +{ 
+      PROCESS => 'P',
+      NOTIFY  => 'N',
+    }
+  },
+);
+
 has 'object_states' => (
   lazy      => 1,
   is        => 'ro',
@@ -67,21 +82,6 @@ has 'session_id' => (
   predicate => 'has_session_id',
   writer    => 'set_session_id',
   default   => sub { -1 },
-);
-
-has 'pluggable_type_prefixes' => (
-  ## Optionally remap PROCESS / NOTIFY types
-  lazy      => 1,
-  is        => 'ro',
-  isa       => HashRef,
-  predicate => 'has_pluggable_type_prefixes',
-  writer    => 'set_pluggable_type_prefixes',
-  default   => sub {
-   +{ 
-      PROCESS => 'P',
-      NOTIFY  => 'N',
-    }
-  },
 );
 
 
@@ -298,7 +298,7 @@ sub _trigger_object_states {
 
     for my $ev (@$evarr) {
       confess "Disallowed handler: $ev"
-        if grep { $_ eq $ev } @disallowed;
+        if grep {; $_ eq $ev } @disallowed;
     }
 
   }
@@ -416,7 +416,7 @@ sub __emitter_start {
     $self->__reg_ses_id( $s_id );
 
     ## subscribe parent session to all notification events.
-    $self->__emitter_reg_events->{ 'all' }->{ $s_id } = 1;
+    $self->__emitter_reg_events->{all}->{ $s_id } = 1;
 
     ## Detach child session.
     $kernel->detach_myself;
