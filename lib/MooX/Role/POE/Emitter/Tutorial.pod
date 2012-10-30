@@ -9,23 +9,90 @@ MooX::Role::POE::Emitter::Tutorial
 A L<MooX::Role::POE::Emitter> walk-through aimed at developers who may not 
 have strong POE/Moo(se) background.
 
+Some familiarity with object-oriented concepts is assumed.
+
 =head1 INTRODUCTION
+
+There are a few concepts and modules you will want to review prior to 
+implementing this role:
 
 =head2 Moo
 
+L<Moo> is a minimalist alternative to L<Moose>, providing all the 
+class-building goodies in a L<Moose> compatible way without the extra 
+overhead of a Meta-Object Protocol (MOP).
+
+See L<Moo> for details.
+
 =head2 Roles
+
+A role is a well-defined implementation of what some languages call 
+"mix-ins" or sometimes possibly "traits." A role defines something a class 
+B<does>; in other words, encapsulated methods & attributes that do not form 
+a concrete class on their own, but can be "consumed" by a class to add some 
+behavior (such as "emits events").
+
+See L<Moo::Role> and L<Role::Tiny> for details.
 
 =head2 POE
 
-=head2 Sessions
+L<POE> is a framework for event-driven asynchronous systems; it is the 
+granddaddy of Perl event frameworks.
+
+L<http://poe.perl.org> contains extensive documentation and examples.
+
+L<POE>, L<POE::Kernel>, and L<POE::Session> are helpful reads, at the very 
+least.
+
+=head3 POE Kernel
+
+The L<POE::Kernel> is a bit like an operating system kernel, 
+managing the L<POE::Loop> and providing central bookkeeping and 
+event/signal dispatch functionality.
+
+=head3 POE Sessions
+
+We stated above that the L<POE::Kernel> is conceptually similar to an 
+operating system kernel. In that sense, a L<POE::Session> could be thought 
+of as being like a process -- the Session asynchronously receives events 
+(often called "states") posted to it by itself or other Sessions and 
+performs some action defined in an assigned handler.
+
+L<POE> events are typically sent between Sessions in a one-to-one manner; 
+L<MooX::Role::POE::Emitter> makes it possible to post events to an 
+arbitrary number of interested "listener" Sessions in a one-to-many fashion 
+instead.
+
+FIXME brief outline of POE::Session, states/handlers mapping, event 
+dispatch, note about POE::Kernel->run
+
+FIXME note about named arguments?
+
+=head2 Observer Pattern
+
+The design pattern implemented in this Role is described as "Observer 
+Pattern" -- a term for a design approach in which "observer" 
+objects are automatically notified/updated when another object changes 
+state.
+
+This particular implementation is derived from 
+L<POE::Component::Syndicator>-0.06.
 
 =head1 EMITTERS
 
 =head2 Configuration
 
-=head3 Adding new states
+FIXME setting attributes / construction
+
+=head3 Adding Emitter states
+
+FIXME demonstrate object_states
+
+FIXME note about dispatch to Emitter session if registered
 
 =head2 Starting your Emitter
+
+FIXME _start_emitter, link back to POE section note about POE::Kernel->run
 
 =head2 Emitting events
 
@@ -39,7 +106,13 @@ FIXME yield, call, anon CBs, mention ->timer($delay, 'emit', $event) etc
 
 =head2 Stopping your Emitter
 
+FIXME show how to define a ->shutdown() method
+
+FIXME shutdown_emitter events, ->_stop_emitter
+
 =head1 PLUGINS
+
+FIXME brief outline and links back to MooX::Role::Pluggable
 
 =head2 Writing a plugin
 
