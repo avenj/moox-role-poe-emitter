@@ -165,7 +165,6 @@ sub _start_emitter {
   $self
 }
 
-
 around '_pluggable_event' => sub {
   my ($orig, $self) = splice @_, 0, 2;
 
@@ -657,12 +656,14 @@ MooX::Role::POE::Emitter - Pluggable POE event emitter role for cows
 
 =head1 DESCRIPTION
 
+Consuming this role gives your class a L<POE::Session> capable of 
+processing events via loaded plugins and/or emitting them to registered 
+"listener" sessions.
+
 This is a L<Moo::Role> for a L<POE> Observer Pattern implementation; 
 it is derived from L<POE::Component::Syndicator> by BINGOS, HINRIK, APOCAL 
-et al, but with more cows ;-) and a few extra features.
-
-Consuming this role gives your class a L<POE::Session> capable of 
-emitting events to loaded plugins and registered "listener" sessions.
+et al, but with more cows ;-) and a few extra features, as well as the 
+faster plugin dispatch system that comes with L<MooX::Role::Pluggable>.
 
 The Emitter role consumes L<MooX::Role::Pluggable>, 
 making your emitter pluggable (see the 
@@ -976,8 +977,7 @@ need to consume L<MooX::Role::Pluggable> on its own, as far as I can tell:
 
   package MyEmitter;
   use Moose;
-  with 'MooX::Role::Pluggable';
-  with 'MooX::Role::POE::Emitter';
+  with 'MooX::Role::Pluggable', 'MooX::Role::POE::Emitter';
 
 =head1 SEE ALSO
 
