@@ -370,8 +370,7 @@ DESCRIPTION
 
       package MyEmitter;
       use Moose;
-      with 'MooX::Role::Pluggable';
-      with 'MooX::Role::POE::Emitter';
+      with 'MooX::Role::Pluggable', 'MooX::Role::POE::Emitter';
 
 SEE ALSO
     For details regarding POE, see POE, POE::Kernel, POE::Session
