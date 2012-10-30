@@ -1,0 +1,64 @@
+=pod
+
+=head1 NAME
+
+MooX::Role::POE::Emitter::Tutorial
+
+=head1 SYNOPSIS
+
+A L<MooX::Role::POE::Emitter> walk-through aimed at developers who may not 
+have strong POE/Moo(se) background.
+
+=head1 INTRODUCTION
+
+=head2 Moo
+
+=head2 Roles
+
+=head2 POE
+
+=head2 Sessions
+
+=head1 EMITTERS
+
+=head2 Configuration
+
+=head3 Adding new states
+
+=head2 Starting your Emitter
+
+=head2 Emitting events
+
+FIXME emit, emit_now, process, retvals
+
+=head2 Dispatch within the Emitter
+
+FIXME yield, call, anon CBs, mention ->timer($delay, 'emit', $event) etc
+
+=head3 Timers
+
+=head2 Stopping your Emitter
+
+=head1 PLUGINS
+
+=head2 Writing a plugin
+
+=head2 Adding plugins
+
+=head1 LISTENERS
+
+=head2 Creating a listener Session
+
+=head2 Subscribing to emitted events
+
+=head2 Receiving events
+
+=head1 COMPLETION
+
+FIXME full app, test it
+
+=head1 AUTHOR
+
+Jon Portnoy <avenj@cobaltirc.org>
+
+=cut
