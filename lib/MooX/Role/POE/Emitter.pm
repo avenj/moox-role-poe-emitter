@@ -30,6 +30,12 @@ has 'alias' => (
   default   => sub { "$_[0]" },
 );
 
+around 'set_alias' => sub {
+  ## FIXME test
+  my ($orig, $self, $value) = @_;
+  $self->call( '__emitter_reset_alias', $value )
+};
+
 has 'event_prefix' => (
   lazy      => 1,
   is        => 'ro',
@@ -153,6 +159,7 @@ sub _start_emitter {
 
         __emitter_sigdie
 
+        __emitter_reset_alias
       / ],
 
       (
@@ -424,6 +431,11 @@ sub __emitter_start {
   $self->call( 'emitter_started' );
 
   $self
+}
+
+sub __emitter_reset_alias {
+  my ($kernel, $self) = @_[KERNEL, OBJECT];
+  $kernel->alias_set( $_[ARG0] );
 }
 
 sub __emitter_disp_default {
