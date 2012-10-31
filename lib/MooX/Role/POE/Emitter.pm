@@ -32,8 +32,12 @@ has 'alias' => (
 
 around 'set_alias' => sub {
   my ($orig, $self, $value) = @_;
-  $self->call( '__emitter_reset_alias', $value )
-    if $poe_kernel->alias_resolve( $self->session_id );
+
+  if ( $poe_kernel->alias_resolve( $self->session_id ) ) {
+    $self->call( '__emitter_reset_alias', $value );
+    $self->emit( $self->event_prefix . 'alias_set', $value );
+  }
+
   $self->$orig($value)
 };
 
@@ -235,6 +239,34 @@ sub __emitter_timer_del {
   }
 
   return
+}
+
+sub state {
+  my ($self, $state, $ref, $method) = @_;
+
+  ## ->state( 'state' );
+  ## ->state( 'state', $obj );
+  ## ->state( 'state', $obj, $method );
+  ## Install coderef as an object state:
+  ## ->state( 'state', $coderef);
+
+  confess "state() expects at least a POE state name"
+    unless defined $state;
+
+  unless (defined $ref) {
+    ## FIXME removing a state
+    return $state
+  }
+
+  if      ( blessed $ref ) {
+    ## Object state
+  } elsif ( ref $ref eq 'CODE' ) {
+    ## CODE state
+  } else {
+    ## Package name?
+  }
+
+  ## FIXME
 }
 
 ## yield/call provide post()/call() frontends.
@@ -714,7 +746,8 @@ L</_start_emitter> is called.
 B<alias> specifies the POE::Kernel alias used for our L<POE::Session>; 
 defaults to the stringified object.
 
-Set via B<set_alias>
+Set via B<set_alias> -- if the Emitter is running, a prefixed B</alias_set> 
+event is emitted.
 
 =head4 event_prefix
 

@@ -197,8 +197,7 @@ This can be used to post events to the Emitter:
   my $sess_id = $emitter->session_id;
   $poe_kernel->post( $sess_id, 'emit', $event, @args );
 
-The C<alias> can be reset on-the-fly, but there are few cases where that is 
-very useful:
+The C<alias> can be reset on-the-fly, if needed:
 
   $emitter->set_alias( $new_alias );
 
@@ -210,6 +209,9 @@ FIXME
 
 FIXME demonstrate object_states
 FIXME note about dispatch to Emitter session if registered
+FIXME link to notes about anon CBs standing in stead of named states
+
+FIXME hmm, we need a state() method for on-the-fly state installation
 
 =head2 Starting your Emitter
 
@@ -225,6 +227,19 @@ FIXME emit, emit_now, process, retvals
 FIXME yield, call, anon CBs, mention ->timer($delay, 'emit', $event) etc
 
 =head3 Timers
+
+FIXME timer(), timer_del(), emitted notifications
+
+For example, you can C<emit()> events on a timer:
+
+  my $timer_id = $emitter->timer(
+    $delay_seconds,
+    'emit',
+    $some_event,
+    @event_args
+  );
+
+FIXME demonstrate timer resetting itself
 
 =head2 Stopping your Emitter
 
