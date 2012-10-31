@@ -31,9 +31,9 @@ has 'alias' => (
 );
 
 around 'set_alias' => sub {
-  ## FIXME test
   my ($orig, $self, $value) = @_;
   $self->call( '__emitter_reset_alias', $value )
+    if $poe_kernel->alias_resolve( $self->session_id )
 };
 
 has 'event_prefix' => (

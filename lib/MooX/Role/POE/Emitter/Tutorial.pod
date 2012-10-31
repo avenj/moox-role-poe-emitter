@@ -58,15 +58,26 @@ of as being like a process -- the Session asynchronously receives events
 (often called "states") posted to it by itself or other Sessions and 
 performs some action defined in an assigned handler.
 
-L<POE> events are typically sent between Sessions in a one-to-one manner; 
+These handlers or 'states' are defined via POE mechanisms known as 
+C<inline_states> (states assigned to inlined coderefs), C<package_states> 
+(states assigned to a particular package name), and (most importantly for 
+our purposes) C<object_states>. See L</Adding Emitter states> for more on 
+C<object_states> as pertains to your Emitter and the L<POE::Session> 
+documentation for the details.
+
+L<POE> events are typically sent asynchronously between Sessions in a 
+one-to-one manner; 
 L<MooX::Role::POE::Emitter> makes it possible to post events to an 
 arbitrary number of interested "listener" Sessions in a one-to-many fashion 
 instead.
 
-FIXME brief outline of POE::Session, states/handlers mapping, event 
-dispatch, note about POE::Kernel->run
+Your Emitter is automatically given its own L<POE::Session> when it is 
+started. Sessions that have already been defined are run when 
+L<POE::Kernel>'s C<run()> method is called; Sessions can be created on the 
+fly, as well, in which case they are spawned when they are created via 
+L<POE::Session>'s C<create()> method.
 
-FIXME note about named arguments?
+FIXME note about named arguments? somewhere ...
 
 =head2 Observer Pattern
 
@@ -80,19 +91,124 @@ L<POE::Component::Syndicator>-0.06.
 
 =head1 EMITTERS
 
+=head2 Outline
+
+Since this is a Role, not a class unto itself, the first step in creating 
+an Emitter is to define your class:
+
+  package My::Emitter;
+  use Moo;
+  use POE;
+  with 'MooX::Role::POE::Emitter';
+
+The above snippet is actually enough to have a working Emitter with default 
+options and no built-in states; you could just stop reading right there ;-)
+
 =head2 Configuration
 
-FIXME setting attributes / construction
+That might not be quite enough; we may want named L<POE> states built 
+into our Emitter that we can trigger, and/or we may want to change some 
+configuration options, assign an C<alias> that L<POE> will 
+recognize, etc.
+
+=head3 BUILD vs construction-time
+
+There are a couple different approaches to configuring your Emitter.
+
+Your Emitter could define a C<BUILD> method or some other method (the 
+SYNOPSIS of L<MooX::Role::POE::Emitter> uses C<spawn>) that performs some 
+set-up after the object is constructed. Here's an example that adds a 
+handler for the internal 'emitter_started' L<POE> event dispatched to the 
+Emitter when it is started; we'll go into more depth on C<object_states> 
+later:
+
+  package My::Emitter;
+  use Moo;
+  use POE;
+  with 'MooX::Role::POE::Emitter';
+
+  sub BUILD {
+    my ($self) = @_;
+
+    ## Add some object_states, for example
+    ## We'll cover this further later on.
+    $self->set_object_states(
+      [
+        $self => {
+          'emitter_started' => '_emitter_started',
+        },
+
+        ## Include any object_states that were added at
+        ## construction time (or by a subclass, etc)
+        (
+          $self->has_object_states ?
+            @{ $self->object_states } : ()
+        ),
+      ],
+    );
+  }
+  
+  sub spawn {
+    my ($self) = @_;
+    ## Start our Emitter's Session. We could do this in BUILD to cause the
+    ## Session to be immediately created, but providing a spawn() method
+    ## gives us a little more external control:
+    $self->_start_emitter;
+  }
+
+  sub _emitter_started {
+    my ($kernel, $self) = @_[KERNEL, OBJECT];
+    ## Our Emitter's Session has started.
+    ## Do some initialization within our Emitter, for example
+  }
+
+FIXME notes on construction-time configuration
+FIXME link to attribs in MXR::P::E docs
+
+=head3 Setting an alias
+
+Giving your Emitter's L<POE::Session> a human-parsable L<POE> C<alias> can 
+make it easier to post events without directly keeping track of your 
+Emitter's object. This is something you might normally do at 
+construction time / before spawn-time from whatever external 
+controller/frontend spawns the Emitter:
+
+  my $emitter = My::Emitter->new(
+    alias => 'my_emitter',
+  );
+
+(If it is not set, it will default to the 'stringified' representation of 
+your Emitter's object.)
+
+You can always retrieve the current alias given the Emitter's object via 
+the C<alias> attribute:
+
+  my $alias = $emitter->alias;
+
+This can be used to post events to the Emitter:
+
+  ## Like calling emit(), but using POE dispatch directly:
+  my $alias = $emitter->alias;
+  $poe_kernel->post( $alias, 'emit', $event, @args );
+
+... as can the L<POE::Session>'s C<session_id> of a running Emitter:
+
+  my $sess_id = $emitter->session_id;
+  $poe_kernel->post( $sess_id, 'emit', $event, @args );
+
+=head3 Configuring prefixes
+
+FIXME
 
 =head3 Adding Emitter states
 
 FIXME demonstrate object_states
-
 FIXME note about dispatch to Emitter session if registered
 
 =head2 Starting your Emitter
 
 FIXME _start_emitter, link back to POE section note about POE::Kernel->run
+FIXME _emitter_started
 
 =head2 Emitting events
 

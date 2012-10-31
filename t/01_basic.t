@@ -1,4 +1,4 @@
-use Test::More tests => 31;
+use Test::More tests => 32;
 use strict; use warnings FATAL => 'all';
 require_ok('MooX::Role::Pluggable::Constants');
 use POE;
@@ -200,6 +200,9 @@ sub _start {
   $emitter->timer( 0,
     sub { pass("Anon coderef callback in timer") },
   );
+
+  $emitter->set_alias('Stuff');
+  ok( $poe_kernel->alias_resolve('Stuff'), 'set_alias()' );
 
   $emitter->yield('shutdown');
 }
