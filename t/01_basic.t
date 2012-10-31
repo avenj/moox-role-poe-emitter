@@ -1,4 +1,4 @@
-use Test::More tests => 32;
+use Test::More tests => 33;
 use strict; use warnings FATAL => 'all';
 require_ok('MooX::Role::Pluggable::Constants');
 use POE;
@@ -202,7 +202,8 @@ sub _start {
   );
 
   $emitter->set_alias('Stuff');
-  ok( $poe_kernel->alias_resolve('Stuff'), 'set_alias()' );
+  cmp_ok( $emitter->alias, 'eq', 'Stuff', 'set_alias() alias is correct' );
+  ok( $poe_kernel->alias_resolve('Stuff'), 'set_alias() POE alias changed' );
 
   $emitter->yield('shutdown');
 }

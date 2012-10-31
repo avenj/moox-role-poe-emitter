@@ -173,6 +173,7 @@ Emitter's object. This is something you might normally do at
 construction time / before spawn-time from whatever external 
 controller/frontend spawns the Emitter:
 
+  ## From a frontend or controller of some sort, for example
   my $emitter = My::Emitter->new(
     alias => 'my_emitter',
   );
@@ -195,6 +196,11 @@ This can be used to post events to the Emitter:
 
   my $sess_id = $emitter->session_id;
   $poe_kernel->post( $sess_id, 'emit', $event, @args );
+
+The C<alias> can be reset on-the-fly, but there are few cases where that is 
+very useful:
+
+  $emitter->set_alias( $new_alias );
 
 =head3 Configuring prefixes
 
