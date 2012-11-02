@@ -3,11 +3,6 @@ use strict; use warnings FATAL => 'all';
 require_ok('MooX::Role::Pluggable::Constants');
 use POE;
 
-## FIXME
-##  Should test subscribed listener lifetime.
-##  A listener session should disappear if it has nothing to do itself
-##  and has unsubscribed from the Emitter.
-##  Seems to work, else this test would hang, but may be worth a gander.
 
 {
   package
