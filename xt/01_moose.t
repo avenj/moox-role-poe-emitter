@@ -13,9 +13,12 @@ use strict; use warnings FATAL => 'all';
     MyEmitter;
   use strict; use warnings FATAL => 'all';
   use Moose;
-  with 'MooX::Role::Pluggable', 'MooX::Role::POE::Emitter';
+#  with 'MooX::Role::Pluggable', 'MooX::Role::POE::Emitter';
 #  with 'MooX::Role::Pluggable';
-#  with 'MooX::Role::POE::Emitter';
+
+  ## Turns out this should pass as-is.
+  ## FIXME depend on newer Moo if RT bug gets fixed
+  with 'MooX::Role::POE::Emitter';
 
   sub BUILD {
     my ($self) = @_;
