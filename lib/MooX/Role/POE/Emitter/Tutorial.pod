@@ -77,8 +77,6 @@ L<POE::Kernel>'s C<run()> method is called; Sessions can be created on the
 fly, as well, in which case they are spawned when they are created via 
 L<POE::Session>'s C<create()> method.
 
-FIXME note about named arguments? somewhere ...
-
 =head2 Observer Pattern
 
 The design pattern implemented in this Role is described as "Observer 
@@ -119,8 +117,8 @@ Your Emitter could define a C<BUILD> method or some other method (the
 SYNOPSIS of L<MooX::Role::POE::Emitter> uses C<spawn>) that performs some 
 set-up after the object is constructed. Here's an example that adds a 
 handler for the internal 'emitter_started' L<POE> event dispatched to the 
-Emitter when it is started; we'll go into more depth on C<object_states> 
-later:
+Emitter when it is started and one that does something silly; we'll go into 
+more depth on C<object_states> later:
 
   package My::Emitter;
   use Moo;
@@ -135,7 +133,8 @@ later:
     $self->set_object_states(
       [
         $self => {
-          'emitter_started' => '_emitter_started',
+          'emitter_started' => 'p_emitter_started',
+          'increment_count' => 'p_increment_count',
         },
 
         ## Include any object_states that were added at
@@ -156,10 +155,16 @@ later:
     $self->_start_emitter;
   }
 
-  sub _emitter_started {
+  sub p_emitter_started {
     my ($kernel, $self) = @_[KERNEL, OBJECT];
     ## Our Emitter's Session has started.
     ## Do some initialization within our Emitter, for example
+  }
+
+  sub p_increment_count {
+    my ($kernel, $self) = @_[KERNEL, OBJECT];
+    $_[HEAP]->{count} += $_[ARG0] || 1;
+    $self->emit( 'counter_incremented', $_[HEAP]->{count} );
   }
 
 Of course, it is still possible to pass in attribute definitions at 
@@ -247,9 +252,36 @@ FIXME construction/config examples?
 
 =head3 Adding Emitter states
 
-FIXME demonstrate object_states
-FIXME note about dispatch to Emitter session if registered
-FIXME link to notes about anon CBs standing in stead of named states
+Unless your class is just a bare Emitter intended to broadcast 
+externally-fed events to plugins and listeners, it will probably do some 
+work internally via its own states. At the very least, you might want to 
+map the C<emitter_started> event to some handler.
+
+Earlier, we showed an 'increment_count' state that was mapped to the 
+'p_increment_count' method via C<object_states>. (It's important to note 
+that these object_states have to be defined before C<_start_emitter> is 
+called -- it's actually possible to execute anonymous code references as 
+if they were predefined states, however; see L</"Dispatch within the 
+Emitter">)
+
+A POE handler looks a little different than the average subroutine; 
+parameters are given names (that are actually constants imported when you 
+C<use POE;>):
+
+  sub my_event {
+    ## The POE::Kernel and the object this event was dispatched to:
+    my ($kernel, $self) = @_[KERNEL, OBJECT];
+    ## The arguments passed to this event:
+    my @params = @_[ARG0 .. $#_];
+    . . .
+  }
+
+See L<POE::Session/"USING POE::Session"> from the POE documentation for 
+more details on what a normal POE state belonging to a Session might look 
+like.
+
+There are sugary methods provided for triggering these Emitter states. 
+L</"Dispatch within the Emitter"> contains most of the details.
 
 =head2 Starting your Emitter
 
@@ -275,15 +307,75 @@ to that section for a brief example.
 
 =head2 Emitting events
 
-FIXME emit, emit_now, process with links to plugins section
+Once the Emitter's Session is started, your object can begin emitting 
+events via C<emit()> (or its synchronous counterpart C<emit_now()>.
+
+Any piece of code that knows about the Emitter object can tell it to emit 
+arbitrary events to subscribed listeners:
+
+  ## Dispatched asynchronously:
+  $emitter->emit( $event, @args );
+  ## Dispatched now:
+  $emitter->emit( $event, @args );
+
+Loading plugins is optional, but if they are loaded, emitted events 
+are dispatched to the Emitter's session first, then to loaded 
+plugins, then (if the event wasn't eaten by plugins FIXME link to 
+plugins section) broadcast to subscribed listeners.
+
+Emitted events are called "NOTIFY" events in conjunction with 
+the plugin pipeline provided by L<MooX::Role::Pluggable> -- this is in 
+contrast to "PROCESS" type events, which are plugin-processed 
+immediately but never sent to subscribed 
+listeners. See L<MooX::Role::POE::Emitter/"process"> and FIXME link to 
+plugins section
 
 =head2 Dispatch within the Emitter
 
-FIXME yield, call, anon CBs, mention ->timer($delay, 'emit', $event) etc
+Your Emitter comes with convenient methods for dispatching events within 
+the context of the Emitter itself; that is to say, dispatching defined 
+C<object_states> and even executing anonymous subroutines as if they were 
+named POE states.
+
+For example, our Emitter as shown in L</Configuration> defined an 
+'increment_count' state and a handler for it that just increments a 
+variable in the L<POE::Session>'s HEAP and emits 
+'counter_incremented' with the new value as an argument.
+
+We could externally invoke the Emitter's handler asynchronously via 
+C<yield()>:
+
+  $emitter->yield( 'increment_count', 2 );
+
+... or synchronously via C<call()>:
+
+  $emitter->call( 'increment_count', 2 );
+
+Of course, this only works for POE states that are predefined in your 
+Emitter. C<yield()> and C<call()> actually accept anonymous code references 
+as well, which are executed just as if they were named states:
+
+  ## Re-implement our increment_count state as a coderef:
+  $emitter->yield(
+    sub {
+       ## $_[OBJECT] is our Emitter's object:
+       my ($kernel, $self) = @_[KERNEL, OBJECT];
+ 
+       ## $_[STATE] is this code reference itself:
+       my $cb = $_[STATE];
+
+       ## $_[HEAP] is our Emitter's POE::Session's heap:
+       $_[HEAP]->{count} += $_[ARG0] || 1;
+       $self->emit( 'counter_incremented', $_[HEAP]->{count} );
+    },
+    2
+  );
 
 =head3 Timers
 
-FIXME timer(), timer_del(), emitted notifications
+The L<POE::Kernel> provides its own timer/delay mechanisms, but your 
+Emitter comes with some sugar for issuing timed events that will execute in 
+the context of the running Emitter.
 
 For example, you can C<emit()> events on a timer:
 
@@ -294,7 +386,34 @@ For example, you can C<emit()> events on a timer:
     @event_args
   );
 
-FIXME demonstrate timer resetting itself
+Perhaps your Emitter might have set up some C<object_states> for itself 
+(refer back to L</Configuration>) and you'd like to fire one of your 
+custom handlers at some point in the future:
+
+  $emitter->timer( $delay, 'my_event', @args );
+
+Just like C<yield>, C<timer> can take an anonymous callback code-reference 
+instead, which will receive itself via $_[STATE]:
+
+  $emitter->timer(
+    $delay,
+    sub {
+      my ($kernel, $self) = @_[KERNEL, OBJECT];
+      my $callback  = $_[STATE];
+      my $first_arg = $_[ARG0];
+      ## ... do some work, set $new_arg perhaps ...
+      ## Reset this same timed callback, as an example:
+      $self->timer( $delay, $callback, $new_arg );
+    },
+    $some_arg
+  );
+
+C<timer()> returns the timer ID, which can be fed to C<timer_del> to clear 
+this timer if needed:
+
+  $emitter->timer_del( $timer_id );
+
+FIXME mention emitted notifications
 
 =head2 Stopping your Emitter
 
@@ -319,14 +438,7 @@ reference count so that the Session can go away naturally.
 FIXME dispatched shutdown-related events
 FIXME shutdown_emitter events, ->_stop_emitter
 
-=head2 A complete Emitter
-
-FIXME show a complete Emitter implementation with comments, based on above 
-bits
-
 =head1 PLUGINS
-
-FIXME brief outline and links back to MooX::Role::Pluggable
 
 Since consuming L<MooX::Role::POE::Emitter> also brings in 
 L<MooX::Role::Pluggable>, your Emitter comes with a plugin pipeline and 
@@ -342,6 +454,8 @@ Sessions.
 
 FIXME brief plugin_add/plugin_del coverage, emitted plugin_added?
 
+=head2 PROCESS vs NOTIFY
+
 =head2 Pluggable handler arguments
 
 FIXME notes on modifying arguments, references, etc
@@ -349,6 +463,7 @@ FIXME notes on modifying arguments, references, etc
 =head2 Controlling event lifetime
 
 FIXME brief notes on EAT_* constants
+
 
 =head2 Writing a plugin
 
@@ -358,13 +473,15 @@ FIXME brief example with register handlers and a P_ / N_ handler
 
 =head2 Creating a listener Session
 
+FIXME
+
 =head2 Subscribing to emitted events
+
+FIXME
 
 =head2 Receiving events
 
-=head1 COMPLETION
-
-FIXME full app, test it
+FIXME
 
 =head1 AUTHOR
 

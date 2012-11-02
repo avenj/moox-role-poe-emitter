@@ -12,6 +12,8 @@ use MooX::Types::MooseLike::Base qw/:all/;
 
 use MooX::Role::Pluggable::Constants;
 
+use Scalar::Util 'blessed';
+
 sub E_TAG () { "Emitter Running" }
 
 ##
@@ -244,6 +246,10 @@ sub __emitter_timer_del {
 sub state {
   my ($self, $state, $ref, $method) = @_;
 
+  ## FIXME might not be the greatest idea ...
+  ##  If not implemented, set_object_states should probably bitch
+  ##   if the Session is currently active/resolvable
+
   ## ->state( 'state' );
   ## ->state( 'state', $obj );
   ## ->state( 'state', $obj, $method );
@@ -259,11 +265,13 @@ sub state {
   }
 
   if      ( blessed $ref ) {
-    ## Object state
+    ## Object state, add to object_states?
+    ## Need a method to pull pairs out of object_states ARRAY
   } elsif ( ref $ref eq 'CODE' ) {
     ## CODE state
+    ## (is this even a good idea?)
   } else {
-    ## Package name?
+    ## Package name? (almost definitely not a good idea?)
   }
 
   ## FIXME
@@ -1021,7 +1029,10 @@ and any event parameters, respectively.
 =head2 Moose compatibility
 
 This Role "seems to be" Moose-compatible as of version 0.07, but you'll 
-need to consume L<MooX::Role::Pluggable> on its own, as far as I can tell:
+need to consume L<MooX::Role::Pluggable> on its own, due to a bug in 
+L<Moo> as of 1.000005. Hopefully this will be resolved soon and you 
+won't need to do anything differently to use L<Moose> -- 
+See L<https://rt.cpan.org/Public/Bug/Display.html?id=80492>
 
   package MyEmitter;
   use Moose;
