@@ -421,22 +421,22 @@ Unlike a normal L<POE::Session>, which goes away if it has no alias and
 nothing to do, your Emitter's Session only shuts down when it is told to.
 
 To make clean shutdowns easier, your Emitter may want to provide a 
-C<shutdown> method or similar that calls C<_stop_emitter> (and perhaps does 
-some other cleanup):
+C<shutdown> method or similar that calls C<_shutdown_emitter> (and perhaps 
+does some other cleanup):
 
   ## In your Emitter:
   sub shutdown {
     my ($self) = @_;
     ## Do other cleanup, etc.
-    $self->_stop_emitter;
+    $self->_shutdown_emitter;
   }
 
-Calling C<_stop_emitter> will unregister subscribed listening Sessions, 
+Calling C<_shutdown_emitter> will unregister subscribed listening Sessions, 
 stop timers, clear the plugin pipeline, and reduce the Emitter's L<POE> 
 reference count so that the Session can go away naturally.
 
 FIXME dispatched shutdown-related events
-FIXME shutdown_emitter events, ->_stop_emitter
+FIXME shutdown_emitter events, ->_shutdown_emitter
 
 =head1 PLUGINS
 
