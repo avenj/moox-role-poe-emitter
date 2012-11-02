@@ -14,12 +14,12 @@ Some familiarity with object-oriented concepts is assumed.
 =head1 INTRODUCTION
 
 There are a few concepts and modules you will want to review prior to 
-implementing this role:
+using this role in your class(es):
 
 =head2 Moo
 
 L<Moo> is a minimalist alternative to L<Moose>, providing all the 
-class-building goodies in a L<Moose> compatible way without the extra 
+class-building goodies in a L<Moose>-compatible manner without the extra 
 overhead of a Meta-Object Protocol (MOP).
 
 See L<Moo> for details.
@@ -162,8 +162,18 @@ later:
     ## Do some initialization within our Emitter, for example
   }
 
-FIXME notes on construction-time configuration
-FIXME link to attribs in MXR::P::E docs
+Of course, it is still possible to pass in attribute definitions at 
+construction time:
+
+  ## In a frontend, for example
+  ## Set an alias and a plugin registration prefix:
+  my $emitter = My::Emitter->new(
+    alias  => 'MyEmitter',
+    register_prefix => 'Plug_',
+  );
+
+See L<MooX::Role::POE::Emitter/"Attributes"> for more details on 
+configuration-related attributes.
 
 =head3 Setting an alias
 
@@ -173,13 +183,13 @@ Emitter's object. This is something you might normally do at
 construction time / before spawn-time from whatever external 
 controller/frontend spawns the Emitter:
 
-  ## From a frontend or controller of some sort, for example
+  ## From a frontend or controller of some sort, for example:
   my $emitter = My::Emitter->new(
     alias => 'my_emitter',
   );
 
-(If it is not set, it will default to the 'stringified' representation of 
-your Emitter's object.)
+(If an alias is not set, it will default to the 'stringified' 
+representation of your Emitter's object.)
 
 You can always retrieve the current alias given the Emitter's object via 
 the C<alias> attribute:
@@ -203,7 +213,37 @@ The C<alias> can be reset on-the-fly, if needed:
 
 =head3 Configuring prefixes
 
-FIXME
+Your emitter has a few different prefix types that are configurable:
+
+=over
+
+=item event_prefix
+
+The B<event_prefix> is prepended to emitted events that 
+are dispatched to subscribed listening Sessions.
+
+For example, if B<event_prefix> is 'emitted_' (the default prefix), 
+C<$emitter->emit('my_event')> will dispatch 'emitted_my_event' to 
+subscribed listener sessions.
+
+=item register_prefix
+
+The B<register_prefix> is the prefix prepended to registration events; this 
+is really for use by L<MooX::Role::Pluggable> (see 
+L</MooX::Role::Pluggable/"_pluggable_init"> for more details) -- the 
+B<register_prefix> is prepended to 'register' and 'unregister' events 
+dispatched to plugins at load-time.
+
+FIXME link to more on plugin register handlers in plugins section
+
+=item pluggable_type_prefixes
+
+FIXME quickly explain process() vs emit() + PROCESS vs NOTIFY
+      links down to Plugin section and MooX::Role::Pluggable
+
+=back
+
+FIXME construction/config examples?
 
 =head3 Adding Emitter states
 
@@ -211,16 +251,31 @@ FIXME demonstrate object_states
 FIXME note about dispatch to Emitter session if registered
 FIXME link to notes about anon CBs standing in stead of named states
 
-FIXME hmm, we need a state() method for on-the-fly state installation
-
 =head2 Starting your Emitter
 
-FIXME _start_emitter, link back to POE section note about POE::Kernel->run
-FIXME _emitter_started
+Your Emitter's L<POE::Session> is created when _start_emitter is called; a 
+frequent pattern is to provide some method that specifically starts the 
+Emitter:
+
+  ## A spawn() method in your Emitter class:
+  sub spawn {
+    my ($self) = @_;
+    $self->_start_emitter;
+  }
+
+The L<POE::Session> is spawned immediately if the L<POE::Kernel> is already 
+running; otherwise it is spawned whenever L<POE::Kernel>'s C<run()> method 
+is called (typically from a frontend of some sort or similar). Refer back 
+to the section on L</POE> for details.
+
+When the Emitter starts, it will issue itself an 'emitter_started' POE 
+event with no arguments. In L</Configuration>, we demonstrated installing 
+an 'emitter_started' handler via the C<object_states> attribute; refer back 
+to that section for a brief example.
 
 =head2 Emitting events
 
-FIXME emit, emit_now, process, retvals
+FIXME emit, emit_now, process with links to plugins section
 
 =head2 Dispatch within the Emitter
 
@@ -243,17 +298,61 @@ FIXME demonstrate timer resetting itself
 
 =head2 Stopping your Emitter
 
-FIXME show how to define a ->shutdown() method
+Unlike a normal L<POE::Session>, which goes away if it has no alias and 
+nothing to do, your Emitter's Session only shuts down when it is told to.
 
+To make clean shutdowns easier, your Emitter may want to provide a 
+C<shutdown> method or similar that calls C<_stop_emitter> (and perhaps does 
+some other cleanup):
+
+  ## In your Emitter:
+  sub shutdown {
+    my ($self) = @_;
+    ## Do other cleanup, etc.
+    $self->_stop_emitter;
+  }
+
+Calling C<_stop_emitter> will unregister subscribed listening Sessions, 
+stop timers, clear the plugin pipeline, and reduce the Emitter's L<POE> 
+reference count so that the Session can go away naturally.
+
+FIXME dispatched shutdown-related events
 FIXME shutdown_emitter events, ->_stop_emitter
+
+=head2 A complete Emitter
+
+FIXME show a complete Emitter implementation with comments, based on above 
+bits
 
 =head1 PLUGINS
 
 FIXME brief outline and links back to MooX::Role::Pluggable
 
+Since consuming L<MooX::Role::POE::Emitter> also brings in 
+L<MooX::Role::Pluggable>, your Emitter comes with a plugin pipeline and 
+various methods to manipulate it, which are documented in 
+L<MooX::Role::Pluggable>.
+
+Plugins are an optional way to extend your Emitter on-the-fly. Plugin 
+objects can control an event's lifetime and modify arguments (or even drop 
+events entirely) prior to broadcasting events to subscribed listener 
+Sessions.
+
+=head2 Adding plugins to the Emitter
+
+FIXME brief plugin_add/plugin_del coverage, emitted plugin_added?
+
+=head2 Pluggable handler arguments
+
+FIXME notes on modifying arguments, references, etc
+
+=head2 Controlling event lifetime
+
+FIXME brief notes on EAT_* constants
+
 =head2 Writing a plugin
 
-=head2 Adding plugins
+FIXME brief example with register handlers and a P_ / N_ handler
 
 =head1 LISTENERS
 
