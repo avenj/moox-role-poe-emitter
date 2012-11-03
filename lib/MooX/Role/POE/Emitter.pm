@@ -30,6 +30,17 @@ has 'alias' => (
   default   => sub { "$_[0]" },
 );
 
+around 'set_alias' => sub {
+  my ($orig, $self, $value) = @_;
+
+  if ( $poe_kernel->alias_resolve( $self->session_id ) ) {
+    $self->call( '__emitter_reset_alias', $value );
+    $self->emit( $self->event_prefix . 'alias_set', $value );
+  }
+
+  $self->$orig($value)
+};
+
 has 'event_prefix' => (
   lazy      => 1,
   is        => 'ro',
@@ -416,7 +427,7 @@ sub __emitter_start {
     ## subscribe parent session to all notification events.
     $self->__emitter_reg_events->{all}->{ $s_id } = 1;
 
-    $kernel->post( $s_id, $self->event_prefix . "registered", $self )
+    $kernel->post( $s_id, $self->event_prefix . "registered", $self );
 
     ## Detach child session.
     $kernel->detach_myself;
