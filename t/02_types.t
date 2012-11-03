@@ -50,7 +50,8 @@ use POE;
 
   sub Proc_things {
     my ($self, $emitter, $first) = @_;
-    pass("Got Proc_things in Emitter")
+    pass("Got Proc_things in Emitter");
+    EAT_NONE
   }
 
 }
@@ -66,7 +67,8 @@ use POE;
 
   sub Emitter_register {
     my ($self, $core) = splice @_, 0, 2;
-    $core->subscribe( $self, 'NOTIFY', 'all' );
+    $core->subscribe( $self, 'NOTIFY', 'test_event' );
+    $core->subscribe( $self, 'PROCESS', 'things' );
     EAT_NONE
   }
 

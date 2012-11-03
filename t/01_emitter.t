@@ -3,6 +3,8 @@ use strict; use warnings FATAL => 'all';
 require_ok('MooX::Role::Pluggable::Constants');
 use POE;
 
+## FIXME tests for internal '_pluggable_event' events
+
 my $emitter_got;
 my $emitter_expect = {
   'emitter started'            => 1,
@@ -79,6 +81,7 @@ my $emitter_expect = {
     $emitter_got->{'emitter got PROCESS event'} = 1;
     $emitter_got->{'PROCESS event correct arg'} = 1
       if $$arg == 1;
+    EAT_NONE
   }
 
   sub timed {
@@ -134,6 +137,10 @@ my $plugin_expect = {
   sub N_emit_now_event {
     $plugin_got->{'got emit_now event'} = 1;
     EAT_NONE
+  }
+
+  sub N_eat_client {
+    EAT_CLIENT
   }
 
   sub P_processed {
@@ -240,6 +247,10 @@ sub emitted_emit_now_event {
   $listener_got->{'got emit_now event'} = 1;
 }
 
+sub emitted_eat_client {
+  fail("Should not have received EAT_CLIENT event");
+}
+
 POE::Session->create(
   package_states => [
     main => [ qw/
@@ -247,6 +258,7 @@ POE::Session->create(
       emitted_registered
       emitted_emit_event
       emitted_emit_now_event
+      emitted_eat_client
     / ],
   ],
 );
@@ -266,9 +278,3 @@ is_deeply($listener_got, $listener_expect,
 );
 
 done_testing;
-
-
-## FIXME
-## To replace 01_old.t, still need:
-##   - EAT_CLIENT / EAT_PLUGIN / EAT_ALL tests
-##   - Internal (pluggable) event dispatch tests

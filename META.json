@@ -44,7 +44,7 @@
    "provides" : {
       "MooX::Role::POE::Emitter" : {
          "file" : "lib/MooX/Role/POE/Emitter.pm",
-         "version" : "0.09"
+         "version" : "0.09_01"
       }
    },
    "release_status" : "stable",

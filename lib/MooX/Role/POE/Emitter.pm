@@ -427,8 +427,6 @@ sub __emitter_start {
     ## subscribe parent session to all notification events.
     $self->__emitter_reg_events->{all}->{ $s_id } = 1;
 
-    $kernel->post( $s_id, $self->event_prefix . "registered", $self );
-
     ## Detach child session.
     $kernel->detach_myself;
   }
