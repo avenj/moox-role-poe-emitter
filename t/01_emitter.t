@@ -1,6 +1,7 @@
 use Test::More;
 use strict; use warnings FATAL => 'all';
-require_ok('MooX::Role::Pluggable::Constants');
+
+use MooX::Role::Pluggable::Constants;
 use POE;
 
 ## FIXME tests for internal '_pluggable_event' events
@@ -19,16 +20,13 @@ my $emitter_expect = {
 {
   package
    MyEmitter;
-
   use strict; use warnings FATAL => 'all';
-
   use POE;
+
   use Test::More;
 
-  use MooX::Role::Pluggable::Constants;
-
   use Moo;
-
+  use MooX::Role::Pluggable::Constants;
   with 'MooX::Role::POE::Emitter';
 
   sub BUILD {
@@ -72,7 +70,6 @@ my $emitter_expect = {
   }
 
   sub emitted_emit_now_event {
-    pass "Got emitted_emit_now_event";
     $emitter_got->{'emitter got emit_now event'}++;
   }
 
@@ -143,6 +140,10 @@ my $plugin_expect = {
     EAT_CLIENT
   }
 
+  sub N_eat_all {
+    EAT_ALL
+  }
+
   sub P_processed {
     my ($self, $emitter, $arg) = @_;
     $plugin_got->{'got process event'}++;
@@ -190,7 +191,9 @@ sub _start {
   $poe_kernel->post( $sess_id, 'subscribe' );
 
   ## process() by Emitter and plugins
-  $emitter->process('processed', 1);
+  cmp_ok( $emitter->process('processed', 1), '==', EAT_NONE,
+    'process() returned EAT_NONE'
+  );
 
   ## emit() to all w/ EAT_NONE
   $emitter->emit('emit_event', 1);
@@ -200,6 +203,8 @@ sub _start {
 
   ## emit() w/ EAT_CLIENT, emitter and plugins only
   $emitter->emit('eat_client');
+  ## emit() w/ plugin returning EAT_ALL
+  $emitter->emit('eat_all');
 
   $emitter->yield(
     sub {
@@ -260,6 +265,10 @@ sub emitted_eat_client {
   fail("Should not have received EAT_CLIENT event");
 }
 
+sub emitted_eat_all {
+  fail("Should not have received EAT_ALL event");
+}
+
 POE::Session->create(
   package_states => [
     main => [ qw/
@@ -268,6 +277,7 @@ POE::Session->create(
       emitted_emit_event
       emitted_emit_now_event
       emitted_eat_client
+      emitted_eat_all
     / ],
   ],
 );

@@ -386,14 +386,11 @@ sub __emitter_notify {
   my $meth = $prefix . $event;
 
   ## Our own session will get ->event_prefix . $event first
-  my $s_id = $_[SESSION]->ID;
-  $kernel->call( $s_id, $meth, @args )
-    if delete $sessions{$s_id};
+  $kernel->call( $_[SESSION], $meth, @args )
+    if delete $sessions{ $_[SESSION]->ID };
 
   ## Dispatched to N_$event after our Session has been notified:
-  my $eat = $self->_pluggable_process( 'NOTIFY', $event, \@args );
-
-  unless ($eat == EAT_ALL) {
+  unless ( $self->_pluggable_process('NOTIFY', $event, \@args) == EAT_ALL ) {
     ## Notify subscribed sessions.
     $kernel->call( $_, $meth, @args )
       for keys %sessions;
