@@ -1,5 +1,5 @@
 package MooX::Role::POE::Emitter;
-our $VERSION = '0.08_01';
+our $VERSION = '0.09_01';
 
 use Moo::Role;
 
@@ -158,7 +158,6 @@ sub _start_emitter {
       },
 
       $self => [ qw/
-
         __emitter_notify
 
         __emitter_timer_set
@@ -365,7 +364,7 @@ sub __decr_ses_refc {
   my ($self, $sess_id) = @_;
   --$self->__emitter_reg_sessions->{$sess_id}->{refc};
   $self->__emitter_reg_sessions->{$sess_id}->{refc} = 0
-    unless $self->__emitter_reg_sessions->{$sess_id}->{refc} > 0
+    unless $self->__emitter_reg_sessions->{$sess_id}->{refc} > 0;
 }
 
 sub __get_ses_refc {
@@ -385,12 +384,13 @@ sub __emitter_drop_sessions {
 
   for my $id (keys %{ $self->__emitter_reg_sessions }) {
     my $count = $self->__get_ses_refc($id);
+    while ( $count-- > 0 ) {
+      $poe_kernel->refcount_decrement(
+        $id, E_TAG
+      )
+    }
 
-    $poe_kernel->refcount_decrement(
-      $id, E_TAG
-    ) while $count-- > 0;
-
-    delete $self->__emitter_reg_sessions->{$id}
+    delete $self->__emitter_reg_sessions->{$id};
   }
 
   1
@@ -412,20 +412,19 @@ sub __emitter_notify {
 
   my %sessions;
 
-  SESSION: for my $regev ('all', $event) {
+  REG: for my $regev ('all', $event) {
     if (exists $self->__emitter_reg_events->{$regev}) {
-      next SESSION unless keys %{ $self->__emitter_reg_events->{$regev} };
-
       $sessions{$_} = 1
-        for values %{ $self->__emitter_reg_events->{$regev} };
+        for keys %{ $self->__emitter_reg_events->{$regev} };
     }
   }
 
   my $meth = $prefix . $event;
 
   ## Our own session will get ->event_prefix . $event first
-  $kernel->call( $_[SESSION], $meth, @args )
-    if delete $sessions{ $_[SESSION]->ID };
+  my $s_id = $_[SESSION]->ID;
+  $kernel->call( $s_id, $meth, @args )
+    if delete $sessions{$s_id};
 
   ## Dispatched to N_$event after our Session has been notified:
   my $eat = $self->_pluggable_process( 'NOTIFY', $event, \@args );
@@ -457,7 +456,6 @@ sub __emitter_start {
   unless ($sender == $kernel) {
     ## Have a parent session.
 
-    ## refcount for this session.
     $kernel->refcount_increment( $s_id, E_TAG );
     $self->__incr_ses_refc( $s_id );
     $self->__reg_ses_id( $s_id );
@@ -554,6 +552,7 @@ sub __shutdown_emitter {
   $self->emit( 'shutdown', @_[ARG0 .. $#_] );
 
   ## Drop sessions and we're spent.
+  $self->call('unsubscribe');
   $self->__emitter_drop_sessions;
 }
 
@@ -577,7 +576,7 @@ sub __emitter_register {
     ## Make sure registered session hangs around
     ##  (until _unregister or shutdown)
     $kernel->refcount_increment( $s_id, E_TAG )
-      unless $s_id eq $self->session_id
+      unless $s_id == $self->session_id
       or $self->__get_ses_refc($s_id);
 
     $self->__incr_ses_refc( $s_id );
@@ -590,14 +589,13 @@ sub __emitter_unregister {
   my ($kernel, $self, $sender) = @_[KERNEL, OBJECT, SENDER];
   my @events = @_[ARG0 .. $#_];
 
-  @events = 'all' unless @events;
+#  @events = 'all' unless @events;
+  @events = keys %{ $self->__emitter_reg_events } unless @events;
 
   my $s_id = $sender->ID;
 
   EV: for my $event (@events) {
     unless (delete $self->__emitter_reg_events->{$event}->{$s_id}) {
-      ## Possible we should just not give a damn?
-      warn "Cannot unregister $event for $s_id -- not registered\n";
       next EV
     }
 
@@ -754,7 +752,7 @@ L</_start_emitter> is called.
 B<alias> specifies the POE::Kernel alias used for our L<POE::Session>; 
 defaults to the stringified object.
 
-Set via B<set_alias> -- if the Emitter is running, a prefixed B</alias_set> 
+Set via B<set_alias> -- if the Emitter is running, a prefixed B<alias_set> 
 event is emitted.
 
 =head4 event_prefix

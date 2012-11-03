@@ -123,7 +123,7 @@ DESCRIPTION
     alias specifies the POE::Kernel alias used for our POE::Session;
     defaults to the stringified object.
 
-    Set via set_alias -- if the Emitter is running, a prefixed /alias_set
+    Set via set_alias -- if the Emitter is running, a prefixed alias_set
     event is emitted.
 
    event_prefix
@@ -369,7 +369,10 @@ DESCRIPTION
 
   Moose compatibility
     This Role "seems to be" Moose-compatible as of version 0.07, but you'll
-    need to consume MooX::Role::Pluggable on its own, as far as I can tell:
+    need to consume MooX::Role::Pluggable on its own, due to a bug in Moo as
+    of 1.000005. Hopefully this will be resolved soon and you won't need to
+    do anything differently to use Moose -- See
+    <https://rt.cpan.org/Public/Bug/Display.html?id=80492>
 
       package MyEmitter;
       use Moose;
