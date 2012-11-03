@@ -63,31 +63,31 @@ my $emitter_expect = {
 
   sub emitter_started {
     my ($kernel, $self) = @_[KERNEL, OBJECT];
-    $emitter_got->{'emitter started'} = 1;
+    $emitter_got->{'emitter started'}++;
     $self->call('subscribe');
   }
 
   sub emitted_emit_event {
-    $emitter_got->{'emitter got emit event'} = 1;
+    $emitter_got->{'emitter got emit event'}++;
   }
 
   sub emitted_emit_now_event {
     pass "Got emitted_emit_now_event";
-    $emitter_got->{'emitter got emit_now event'} = 1;
+    $emitter_got->{'emitter got emit_now event'}++;
   }
 
   sub P_processed {
     my ($self, $emitter, $arg) = @_;
-    $emitter_got->{'emitter got PROCESS event'} = 1;
-    $emitter_got->{'PROCESS event correct arg'} = 1
+    $emitter_got->{'emitter got PROCESS event'}++;
+    $emitter_got->{'PROCESS event correct arg'}++
       if $$arg == 1;
     EAT_NONE
   }
 
   sub timed {
     my ($kernel, $self) = @_[KERNEL, OBJECT];
-    $emitter_got->{'emitter got timed event'} = 1;
-    $emitter_got->{'timed event correct arg'} = 1
+    $emitter_got->{'emitter got timed event'}++;
+    $emitter_got->{'timed event correct arg'}++
       if $_[ARG0] == 1;
   }
 
@@ -118,24 +118,24 @@ my $plugin_expect = {
 
   sub Emitter_register {
     my ($self, $core) = @_;
-    $plugin_got->{'register called'} = 1;
+    $plugin_got->{'register called'}++;
     $core->subscribe( $self, 'NOTIFY', 'all');
     $core->subscribe( $self, 'PROCESS', 'all');
     EAT_NONE
   }
 
   sub Emitter_unregister {
-    $plugin_got->{'unregister called'} = 1;
+    $plugin_got->{'unregister called'}++;
     EAT_NONE
   }
 
   sub N_emit_event {
-    $plugin_got->{'got emit event'} = 1;
+    $plugin_got->{'got emit event'}++;
     EAT_NONE
   }
 
   sub N_emit_now_event {
-    $plugin_got->{'got emit_now event'} = 1;
+    $plugin_got->{'got emit_now event'}++;
     EAT_NONE
   }
 
@@ -145,16 +145,16 @@ my $plugin_expect = {
 
   sub P_processed {
     my ($self, $emitter, $arg) = @_;
-    $plugin_got->{'got process event'} = 1;
-    $plugin_got->{'PROCESS event correct arg'} = 1
+    $plugin_got->{'got process event'}++;
+    $plugin_got->{'PROCESS event correct arg'}++
       if $$arg == 1;
     EAT_NONE
   }
 
   sub P_from_default {
     my ($self, $emitter, $arg) = @_;
-    $plugin_got->{'got _emitter_default event'} = 1;
-    $plugin_got->{'default event args correct'} = 1
+    $plugin_got->{'got _emitter_default event'}++;
+    $plugin_got->{'default event args correct'}++
       if $$arg eq 'test';
     EAT_NONE
   }
@@ -180,23 +180,32 @@ sub _start {
   $emitter->spawn;
   my $sess_id;
 
+  ## session_id()
   ok( $sess_id = $emitter->session_id, 'session_id()' );
 
+  ## plugin load
   ok( $emitter->plugin_add('MyPlugin', MyPlugin->new), 'plugin_add()' );
 
+  ## subscribe to all
   $poe_kernel->post( $sess_id, 'subscribe' );
 
+  ## process() by Emitter and plugins
   $emitter->process('processed', 1);
 
+  ## emit() to all w/ EAT_NONE
   $emitter->emit('emit_event', 1);
 
+  ## emit_now() to all w/ EAT_NONE
   $emitter->emit_now('emit_now_event', 1);
+
+  ## emit() w/ EAT_CLIENT, emitter and plugins only
+  $emitter->emit('eat_client');
 
   $emitter->yield(
     sub {
       my ($sub_kern, $sub_obj) = @_[KERNEL, OBJECT];
-      $listener_got->{'CODE ref in yield'} = 1;
-      $listener_got->{'CODE ref in yield args correct'} = 1
+      $listener_got->{'CODE ref in yield'}++;
+      $listener_got->{'CODE ref in yield args correct'}++
         if $_[ARG0] eq 'one' and $_[ARG1] eq 'two';
     }, 'one', 'two'
   );
@@ -214,10 +223,10 @@ sub _start {
         unless $sub_obj->isa('MyEmitter');
       my $this_cb = $_[STATE];
 
-      $listener_got->{'CODE ref timer fired'} = 1;
-      $listener_got->{'CODE ref present in timer STATE'} = 1
+      $listener_got->{'CODE ref timer fired'}++;
+      $listener_got->{'CODE ref present in timer STATE'}++
         if ref $this_cb eq 'CODE';
-      $listener_got->{'CODE ref timer args correct'} = 1
+      $listener_got->{'CODE ref timer args correct'}++
         if $_[ARG0] eq 'some' and $_[ARG1] eq 'arg';
     },
     'some', 'arg'
@@ -240,11 +249,11 @@ sub emitted_registered {
 }
 
 sub emitted_emit_event {
-  $listener_got->{'got emit event'} = 1;
+  $listener_got->{'got emit event'}++;
 }
 
 sub emitted_emit_now_event {
-  $listener_got->{'got emit_now event'} = 1;
+  $listener_got->{'got emit_now event'}++;
 }
 
 sub emitted_eat_client {
