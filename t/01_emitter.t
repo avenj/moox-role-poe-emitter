@@ -55,7 +55,6 @@ my $emitter_expect = {
 
   sub shutdown {
     my ($kernel, $self) = @_[KERNEL, OBJECT];
-    $self->call('unsubscribe', 'all');
     $self->_shutdown_emitter;
   }
 
