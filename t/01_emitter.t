@@ -95,12 +95,14 @@ my $emitter_expect = {
 
 my $plugin_got;
 my $plugin_expect = {
-  'register called'           => 1,
-  'unregister called'         => 1,
-  'got emit event'            => 1,
-  'got emit_now event'        => 1,
-  'got process event'         => 1,
-  'PROCESS event correct arg' => 1,
+  'register called'            => 1,
+  'unregister called'          => 1,
+  'got emit event'             => 1,
+  'got emit_now event'         => 1,
+  'got process event'          => 1,
+  'PROCESS event correct arg'  => 1,
+  'got _emitter_default event' => 1,
+  'default event args correct' => 1,
 };
 
 {
@@ -139,6 +141,14 @@ my $plugin_expect = {
     $plugin_got->{'got process event'} = 1;
     $plugin_got->{'PROCESS event correct arg'} = 1
       if $$arg == 1;
+    EAT_NONE
+  }
+
+  sub P_from_default {
+    my ($self, $emitter, $arg) = @_;
+    $plugin_got->{'got _emitter_default event'} = 1;
+    $plugin_got->{'default event args correct'} = 1
+      if $$arg eq 'test';
     EAT_NONE
   }
 }
@@ -193,6 +203,8 @@ sub _start {
   $emitter->timer( 0,
     sub {
       my ($sub_kern, $sub_obj) = @_[KERNEL, OBJECT];
+      fail("Expected a MyEmitter but got $sub_obj")
+        unless $sub_obj->isa('MyEmitter');
       my $this_cb = $_[STATE];
 
       $listener_got->{'CODE ref timer fired'} = 1;
@@ -203,6 +215,8 @@ sub _start {
     },
     'some', 'arg'
   );
+
+  $poe_kernel->post( $emitter->alias, 'from_default', 'test' );
 
   $emitter->yield('shutdown');
 }
@@ -248,3 +262,9 @@ is_deeply($listener_got, $listener_expect,
 );
 
 done_testing;
+
+
+## FIXME
+## To replace 01_old.t, still need:
+##   - EAT_CLIENT / EAT_PLUGIN / EAT_ALL tests
+##   - Internal (pluggable) event dispatch tests
