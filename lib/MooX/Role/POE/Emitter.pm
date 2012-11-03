@@ -409,13 +409,14 @@ sub __emitter_start {
   unless ($sender == $kernel) {
     ## Have a parent session.
 
-    ## refcount for this session.
     $kernel->refcount_increment( $s_id, E_TAG );
     $self->__incr_ses_refc( $s_id );
     $self->__reg_ses_id( $s_id );
 
     ## subscribe parent session to all notification events.
     $self->__emitter_reg_events->{all}->{ $s_id } = 1;
+
+    $kernel->post( $s_id, $self->event_prefix . "registered", $self )
 
     ## Detach child session.
     $kernel->detach_myself;
