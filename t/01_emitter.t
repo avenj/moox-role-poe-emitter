@@ -218,6 +218,10 @@ sub _start {
 
   $poe_kernel->post( $emitter->alias, 'from_default', 'test' );
 
+  $emitter->set_alias( 'Stuff' );
+  cmp_ok( $emitter->alias, 'eq', 'Stuff', 'set_alias() attrib changed' );
+  ok( $poe_kernel->alias_resolve('Stuff'), 'set_alias() successful' );
+
   $emitter->yield('shutdown');
 }
 

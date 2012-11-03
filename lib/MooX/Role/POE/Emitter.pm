@@ -1,5 +1,5 @@
 package MooX::Role::POE::Emitter;
-our $VERSION = '0.08_01';
+our $VERSION = '0.09_01';
 
 use Moo::Role;
 
@@ -156,7 +156,6 @@ sub _start_emitter {
       },
 
       $self => [ qw/
-
         __emitter_notify
 
         __emitter_timer_set
@@ -164,6 +163,7 @@ sub _start_emitter {
 
         __emitter_sigdie
 
+        __emitter_reset_alias
       / ],
 
       (
@@ -436,6 +436,11 @@ sub __emitter_start {
   $self->call( 'emitter_started' );
 
   $self
+}
+
+sub __emitter_reset_alias {
+  my ($kernel, $self) = @_[KERNEL, OBJECT];
+  $kernel->alias_set( $_[ARG0] );
 }
 
 sub __emitter_disp_default {
@@ -713,7 +718,8 @@ L</_start_emitter> is called.
 B<alias> specifies the POE::Kernel alias used for our L<POE::Session>; 
 defaults to the stringified object.
 
-Set via B<set_alias>
+Set via B<set_alias> -- if the Emitter is running, a prefixed B<alias_set> 
+event is emitted.
 
 =head4 event_prefix
 
