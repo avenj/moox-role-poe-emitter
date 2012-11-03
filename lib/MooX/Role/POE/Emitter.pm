@@ -550,7 +550,11 @@ sub __emitter_unregister {
   my ($kernel, $self, $sender) = @_[KERNEL, OBJECT, SENDER];
   my @events = @_[ARG0 .. $#_];
 
-#  @events = 'all' unless @events;
+  ##  - An unsub without any arguments means "stop sending all events I
+  ##    have subscribed to"
+  ##  - An unsub for 'all' means "stop sending events I haven't asked for 
+  ##    by name"
+
   @events = keys %{ $self->__emitter_reg_events } unless @events;
 
   my $s_id = $sender->ID;
@@ -804,6 +808,13 @@ as above:
     'unsubscribe',
     @events
   );
+
+If no events are specified, then any previously subscribed events are 
+unregistered.
+
+Note that unsubscribing from 'all' does not carry the same behavior; that 
+is to say, a subscriber can subscribe/unsubscribe for 'all' separately from 
+some set of specifically named events.
 
 =head2 Receiving events
 
