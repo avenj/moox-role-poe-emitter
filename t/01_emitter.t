@@ -4,8 +4,6 @@ use strict; use warnings FATAL => 'all';
 use MooX::Role::Pluggable::Constants;
 use POE;
 
-## FIXME tests for internal '_pluggable_event' events
-
 my $emitter_got;
 my $emitter_expect = {
   'emitter started'            => 1,
@@ -293,15 +291,22 @@ POE::Session->create(
 
 $poe_kernel->run;
 
-is_deeply($emitter_got, $emitter_expect,
+sub test_expected_ok {
+  my ($got, $expected) = @_;
+  for my $test (keys %$expected) {
+    is($got->{$test}, $expected->{$test}, $test)
+  }
+}
+
+test_expected_ok($emitter_got, $emitter_expect,
   'Got expected results from Emitter'
 );
 
-is_deeply($plugin_got, $plugin_expect,
+test_expected_ok($plugin_got, $plugin_expect,
   'Got expected results from Plugin'
 );
 
-is_deeply($listener_got, $listener_expect,
+test_expected_ok($listener_got, $listener_expect,
   'Got expected results from Listener'
 );
 

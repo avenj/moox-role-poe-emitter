@@ -134,15 +134,22 @@ POE::Session->create(
 
 $poe_kernel->run;
 
-is_deeply($emitter_got, $emitter_expected,
+sub test_expected_ok {
+  my ($got, $expect) = @_;
+  for my $test (keys %$expect) {
+    is($got->{$test}, $expect->{$test}, $test)
+  }
+}
+
+test_expected_ok($emitter_got, $emitter_expected,
   'Got expected results from Emitter'
 );
 
-is_deeply($plugin_got, $plugin_expected,
+test_expected_ok($plugin_got, $plugin_expected,
   'Got expected results from Plugin'
 );
 
-is_deeply($listener_got, $listener_expected,
+test_expected_ok($listener_got, $listener_expected,
   'Got expected results from Listener'
 );
 
