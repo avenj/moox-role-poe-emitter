@@ -169,9 +169,9 @@ my $listener_expect = {
   'CODE ref timer fired'            => 1,
   'CODE ref present in timer STATE' => 1,
   'CODE ref timer args correct'     => 1,
+  'got timer_set event'             => 3,
+  'got plugin_added event'          => 1,
 };
-
-
 
 my $emitter = MyEmitter->new;
 
@@ -216,8 +216,8 @@ sub _start {
 
   $emitter->timer( 0, 'timed', 1 );
 
-  my $timer_id = $emitter->timer( 1, 'timed_fail' );
-  ok( $emitter->timer_del($timer_id), 'timer_del()' );
+  my $timer_id = $emitter->timer( 2, 'timed_fail' );
+  $emitter->timer_del($timer_id);
 
   my($timer_cb_res, $timer_cb_args);
   $emitter->timer( 0,
@@ -268,6 +268,14 @@ sub emitted_eat_all {
   fail("Should not have received EAT_ALL event");
 }
 
+sub emitted_timer_set {
+  $listener_got->{'got timer_set event'}++;
+}
+
+sub emitted_plugin_added {
+  $listener_got->{'got plugin_added event'}++;
+}
+
 POE::Session->create(
   package_states => [
     main => [ qw/
@@ -277,6 +285,8 @@ POE::Session->create(
       emitted_emit_now_event
       emitted_eat_client
       emitted_eat_all
+      emitted_timer_set
+      emitted_plugin_added
     / ],
   ],
 );
