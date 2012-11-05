@@ -292,8 +292,14 @@ POE::Session->create(
 $poe_kernel->run;
 
 sub test_expected_ok {
-  my ($got, $expected) = @_;
+  my ($got, $expected, $desc) = @_;
+  $desc = defined $desc ? $desc : '' ;
   for my $test (keys %$expected) {
+    unless (exists $got->{$test}) {
+      fail($desc);
+      diag("No result for test '$test'");
+      next
+    }
     is($got->{$test}, $expected->{$test}, $test)
   }
 }
