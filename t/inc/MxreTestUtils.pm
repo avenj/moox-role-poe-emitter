@@ -10,20 +10,25 @@ our @EXPORT = qw/
 
 sub test_expected_ok {
   my ($got, $expected, $desc) = @_;
-  $desc = defined $desc ? $desc : '';
+  $desc = defined $desc ? $desc : 'Unnamed test';
+
   for my $test (keys %$expected) {
+
     unless (exists $got->{$test}) {
       fail($desc);
       diag("No result for test '$test'");
       next
     }
+
     if (ref $expected->{$test}) {
       is_deeply($got->{$test}, $expected->{$test}, $test)
     } else {
       is($got->{$test}, $expected->{$test}, $test)
         or diag ("$desc failed")
     }
+
   }
+
   is_deeply($got, $expected, $desc)
 }
 
