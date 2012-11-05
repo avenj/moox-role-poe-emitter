@@ -13,6 +13,7 @@ my $emitter_expect = {
   'emitter got PROCESS event'  => 1,
   'PROCESS event correct arg'  => 1,
   'emitter got emit event'     => 1,
+  'emit event correct arg'     => 1,
   'emitter got emit_now event' => 1,
   'emitter got timed event'    => 1,
   'timed event correct arg'    => 1,
@@ -67,6 +68,8 @@ my $emitter_expect = {
 
   sub emitted_emit_event {
     $emitter_got->{'emitter got emit event'}++;
+    $emitter_got->{'emit event correct arg'}++
+      if $_[ARG0] == 1;
   }
 
   sub emitted_emit_now_event {
@@ -274,6 +277,7 @@ sub emitted_timer_set {
 }
 
 sub emitted_plugin_added {
+  ## This means _pluggable_event redispatch is working.
   $listener_got->{'got plugin_added event'}++;
 }
 

@@ -21,8 +21,10 @@ sub test_expected_ok {
       is_deeply($got->{$test}, $expected->{$test}, $test)
     } else {
       is($got->{$test}, $expected->{$test}, $test)
+        or diag ("$desc failed")
     }
   }
+  is_deeply($got, $expected, $desc)
 }
 
 1;
