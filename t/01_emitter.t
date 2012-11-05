@@ -4,6 +4,9 @@ use strict; use warnings FATAL => 'all';
 use MooX::Role::Pluggable::Constants;
 use POE;
 
+use lib 't/inc';
+use MxreTestUtils;
+
 my $emitter_got;
 my $emitter_expect = {
   'emitter started'            => 1,
@@ -290,19 +293,6 @@ POE::Session->create(
 );
 
 $poe_kernel->run;
-
-sub test_expected_ok {
-  my ($got, $expected, $desc) = @_;
-  $desc = defined $desc ? $desc : '' ;
-  for my $test (keys %$expected) {
-    unless (exists $got->{$test}) {
-      fail($desc);
-      diag("No result for test '$test'");
-      next
-    }
-    is($got->{$test}, $expected->{$test}, $test)
-  }
-}
 
 test_expected_ok($emitter_got, $emitter_expect,
   'Got expected results from Emitter'

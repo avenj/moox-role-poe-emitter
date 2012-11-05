@@ -3,6 +3,9 @@ use Test::More;
 use strict; use warnings FATAL => 'all';
 use POE;
 
+use lib 't/inc';
+use MxreTestUtils;
+
 my $emitter_got;
 my $emitter_expected = {
   'got Proc_things' => 1,
@@ -133,13 +136,6 @@ POE::Session->create(
 );
 
 $poe_kernel->run;
-
-sub test_expected_ok {
-  my ($got, $expect) = @_;
-  for my $test (keys %$expect) {
-    is($got->{$test}, $expect->{$test}, $test)
-  }
-}
 
 test_expected_ok($emitter_got, $emitter_expected,
   'Got expected results from Emitter'
