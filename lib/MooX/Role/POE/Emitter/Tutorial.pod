@@ -450,17 +450,96 @@ objects can control an event's lifetime and modify arguments (or even drop
 events entirely) prior to broadcasting events to subscribed listener 
 Sessions.
 
+A plugin is just an object that provides register/unregister methods 
+called by L<MooX::Role::Pluggable> when the plugin is loaded/unloaded; 
+the plugin can subscribe to events during or after registration and define 
+methods to handle them.
+
 =head2 Adding plugins to the Emitter
 
 FIXME brief plugin_add/plugin_del coverage, emitted plugin_added?
+FIXME event subscribe() for PROCESS and NOTIFY
 
 =head2 PROCESS vs NOTIFY
 
+There are two types of events dispatched to plugins via 
+L<MooX::Role::Pluggable/"_pluggable_process"> by an Emitter: B<PROCESS> and 
+B<NOTIFY>.
+
+A B<PROCESS> event is dispatched when the Emitter's C<process()> method is 
+called. These are events that are only processed (synchronously) by 
+plugins, in contrast to emitted events. By default, handlers for these 
+events
+
+A B<NOTIFY> event is dispatched to plugins when the C<emit()> or 
+C<emit_now()> methods are used to emit events.
+Plugin processing happens directly before events are emitted 
+to listening sessions.
+
+In either case, arguments can be modified (see L</"Pluggable handler 
+arguments">, below) and the event's lifetime can be controlled via event handler 
+return values (which we'll cover in L</"Controlling event lifetime">, also 
+below).
+
+It's worth noting that a plugin event is actually dispatched to 
+the Emitter's object if a handler method for it is defined. For example, 
+given the default B<PROCESS> prefix 'P':
+
+  ## A PROCESS event handler defined in your Emitter:
+  use MooX::Role::Pluggable::Constants;
+  sub P_my_event {
+    ## First and second args are both $self inside the Emitter:
+    my ($self) = splice @_, 0, 2;
+
+    ## Explicit de-reference
+    ##  (see 'Pluggable handler arguments' below)
+    my $first_arg = ${ $_[0] };
+
+    . . .
+
+    ## Let this event continue to plugins
+    ##  (see 'Controlling event lifetime' below)
+    return EAT_NONE
+  }
+
+(See L<MooX::Role::Pluggable> for complete details on plugin dispatch.)
+
 =head2 Pluggable handler arguments
 
-FIXME notes on modifying arguments, references, etc
+An event handler inside a plugin receives its arguments as 
+individual references; this means they can be modified as the event is 
+handed down through the plugin pipeline:
+
+  sub P_my_process_event {
+    ## First two arguments are the plugin's '$self'
+    ## and the Emitter object, respectively:
+    my ($self, $emitter) = splice @_, 0, 2;
+
+    ## Any other arguments are scalar references:
+    my $first  = ${ $_[0] };
+    my $second = ${ $_[1] };
+
+    ## ... another way:
+    my ($first, $second) = @_;
+    $$first = "New string";
+
+    return EAT_NONE
+  }
+
+You can control the order of plugins within the pipeline, thereby making it 
+easy to insert filters that operate on arguments before other plugins, for 
+example. See L<MooX::Role::Pluggable> for details on plugin pipeline 
+manipulation.
 
 =head2 Controlling event lifetime
+
+The above examples show handlers returning C<EAT_*> constants.
+These are brought in when your plugin (or Emitter) imports 
+L<MooX::Role::Pluggable::Constants>:
+
+  package MyPlugin;
+  use strictures 1;
+  use MooX::Role::Pluggable::Constants;
 
 FIXME brief notes on EAT_* constants
 

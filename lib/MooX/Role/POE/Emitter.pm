@@ -1036,9 +1036,10 @@ and any event parameters, respectively.
 
 This Role "seems to be" Moose-compatible as of version 0.07, but you'll 
 need to consume L<MooX::Role::Pluggable> on its own, due to a bug in 
-L<Moo> as of 1.000005. Hopefully this will be resolved soon and you 
-won't need to do anything differently to use L<Moose> -- 
-See L<https://rt.cpan.org/Public/Bug/Display.html?id=80492>
+L<Moo> that is present as of Moo-1.000005. Hopefully the relevant issue 
+will be resolved soon and you won't need to put in any extra effort to use 
+L<Moose> -- see L<https://rt.cpan.org/Public/Bug/Display.html?id=80492> for the 
+relevant ticket.
 
   package MyEmitter;
   use Moose;
@@ -1055,11 +1056,12 @@ L<Role::Tiny>
 
 Jon Portnoy <avenj@cobaltirc.org>
 
-Derived from L<POE::Component::Syndicator>-0.06 by BINGOS, HINRIK, 
-APOCAL et al. That will probably do you for non-Moo(se) use cases; I 
-needed something cow-like that worked with L<MooX::Role::Pluggable>. 
+Originally derived from L<POE::Component::Syndicator>-0.06 by BINGOS, 
+HINRIK, APOCAL et al. That may do you for non-Moo(se) use cases; I 
+needed something cow-like that worked with L<MooX::Role::Pluggable>, and 
+made a few turns along the way.
 
-Licensed under the same terms as perl5
+Licensed under the same terms as perl5.
 
 =cut
 
