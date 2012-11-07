@@ -481,7 +481,7 @@ arguments">, below) and the event's lifetime can be controlled via event handler
 return values (which we'll cover in L</"Controlling event lifetime">, also 
 below).
 
-It's worth noting that a plugin event is actually dispatched to 
+It's worth noting that a plugin event is actually first dispatched to 
 the Emitter's object if a handler method for it is defined. For example, 
 given the default B<PROCESS> prefix 'P':
 
@@ -539,10 +539,21 @@ L<MooX::Role::Pluggable::Constants>:
 
   package MyPlugin;
   use strictures 1;
+  ## Get the following constants:
+  ##  EAT_NONE, EAT_ALL, EAT_PLUGIN, EAT_CLIENT
   use MooX::Role::Pluggable::Constants;
 
-FIXME brief notes on EAT_* constants
+The most common return values are 'EAT_NONE' (indicating the event should 
+continue to the next plugin in the pipeline and/or off to listening 
+Sessions) and 'EAT_ALL' (indicating the event's lifetime should terminate).
 
+EAT_PLUGIN is used to stop plugins from processing but 
+allow the event to continue to listening Sessions. EAT_CLIENT is the 
+opposite, allowing plugin processing but skipping dispatch to listening 
+Sessions.
+
+More details can be found in the documentation for  
+L<MooX::Role::POE::Emitter/"emit"> and L<MooX::Role::Pluggable>.
 
 =head2 Writing a plugin
 
@@ -551,6 +562,10 @@ FIXME brief example with register handlers and a P_ / N_ handler
 =head1 LISTENERS
 
 =head2 Creating a listener Session
+
+A listener/subscriber is just a regular L<POE::Session> that sends a 
+C<subscribe> event to your Emitter for some set of events (or 'all' -- 
+see L</"Subscribing to emitted events">, below).
 
 FIXME
 
