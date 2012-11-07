@@ -242,40 +242,6 @@ sub __emitter_timer_del {
   return
 }
 
-sub state {
-  my ($self, $state, $ref, $method) = @_;
-
-  ## FIXME might not be the greatest idea ...
-  ##  If not implemented, set_object_states should probably bitch
-  ##   if the Session is currently active/resolvable
-
-  ## ->state( 'state' );
-  ## ->state( 'state', $obj );
-  ## ->state( 'state', $obj, $method );
-  ## Install coderef as an object state:
-  ## ->state( 'state', $coderef);
-
-  confess "state() expects at least a POE state name"
-    unless defined $state;
-
-  unless (defined $ref) {
-    ## FIXME removing a state
-    return $state
-  }
-
-  if      ( blessed $ref ) {
-    ## Object state, add to object_states?
-    ## Need a method to pull pairs out of object_states ARRAY
-  } elsif ( ref $ref eq 'CODE' ) {
-    ## CODE state
-    ## (is this even a good idea?)
-  } else {
-    ## Package name? (almost definitely not a good idea?)
-  }
-
-  ## FIXME
-}
-
 ## yield/call provide post()/call() frontends.
 sub yield {
   my ($self, @args) = @_;
@@ -412,7 +378,7 @@ sub __emitter_notify {
 
   my %sessions;
 
-  REG: for my $regev ('all', $event) {
+  for my $regev ('all', $event) {
     if (exists $self->__emitter_reg_events->{$regev}) {
       $sessions{$_} = 1
         for keys %{ $self->__emitter_reg_events->{$regev} };
@@ -432,7 +398,8 @@ sub __emitter_notify {
       for keys %sessions;
   }
 
-  ## Received emitted 'shutdown', drop sessions.
+  ## Received emitted 'shutdown'
+  ## We're done -- drop sessions after dispatch:
   $self->__emitter_drop_sessions
     if $event eq 'shutdown';
 }
