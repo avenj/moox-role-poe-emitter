@@ -43,6 +43,7 @@ around 'set_alias' => sub {
   $self->$orig($value)
 };
 
+
 has 'event_prefix' => (
   lazy      => 1,
   is        => 'ro',
@@ -51,6 +52,7 @@ has 'event_prefix' => (
   writer    => 'set_event_prefix',
   default   => sub { "emitted_" },
 );
+
 
 has 'pluggable_type_prefixes' => (
   ## Optionally remap PROCESS / NOTIFY types
@@ -67,6 +69,7 @@ has 'pluggable_type_prefixes' => (
   },
 );
 
+
 has 'object_states' => (
   lazy      => 1,
   is        => 'ro',
@@ -76,6 +79,41 @@ has 'object_states' => (
   trigger   => 1,
   default   => sub { [] },
 );
+
+sub _trigger_object_states {
+  my ($self, $states) = @_;
+
+  confess "object_states() should be an ARRAY or HASH"
+    unless ref $states eq 'HASH' or ref $states eq 'ARRAY' ;
+
+  my @disallowed = qw/
+    _start
+    _stop
+    _default
+    register
+    unregister
+    subscribe
+    unsubscribe
+  /;
+
+  for (my $i=1; $i <= (scalar(@$states) - 1 ); $i+=2 ) {
+    my $events = $states->[$i];
+    my $evarr = ref $events eq 'ARRAY' ? $events : [ keys %$events ];
+
+    for my $ev (@$evarr) {
+      confess "Disallowed handler: $ev"
+        if grep {; $_ eq $ev } @disallowed;
+    }
+  }
+
+  if ( $poe_kernel->alias_resolve( $self->session_id ) ) {
+    carp "object_states() set while Emitter's Session is running",
+         " -- states will not be live in current Session"
+  }
+
+  $states
+}
+
 
 has 'register_prefix' => (
   lazy      => 1,
@@ -87,6 +125,7 @@ has 'register_prefix' => (
   default   => sub { "Emitter_" },
 );
 
+
 has 'session_id' => (
   init_arg  => undef,
   lazy      => 1,
@@ -96,6 +135,7 @@ has 'session_id' => (
   writer    => 'set_session_id',
   default   => sub { -1 },
 );
+
 
 
 has '__emitter_reg_sessions' => (
@@ -286,38 +326,6 @@ sub process {
   ## Dispatched to P_$event :
   $self->_pluggable_process( 'PROCESS', $event, \@args )
 }
-
-
-sub _trigger_object_states {
-  my ($self, $states) = @_;
-
-  confess "object_states() should be an ARRAY or HASH"
-    unless ref $states eq 'HASH' or ref $states eq 'ARRAY' ;
-
-  my @disallowed = qw/
-    _start
-    _stop
-    _default
-    register
-    unregister
-    subscribe
-    unsubscribe
-  /;
-
-  for (my $i=1; $i <= (scalar(@$states) - 1 ); $i+=2 ) {
-    my $events = $states->[$i];
-    my $evarr = ref $events eq 'ARRAY' ? $events : [ keys %$events ];
-
-    for my $ev (@$evarr) {
-      confess "Disallowed handler: $ev"
-        if grep {; $_ eq $ev } @disallowed;
-    }
-
-  }
-
-  $states
-}
-
 
 ## Session ref-counting bits.
 
