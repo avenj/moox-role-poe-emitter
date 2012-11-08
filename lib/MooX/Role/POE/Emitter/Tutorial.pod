@@ -133,8 +133,8 @@ more depth on C<object_states> later:
     $self->set_object_states(
       [
         $self => {
-          'emitter_started' => 'p_emitter_started',
-          'increment_count' => 'p_increment_count',
+          'emitter_started' => 's_emitter_started',
+          'increment_count' => 's_increment_count',
         },
 
         ## Include any object_states that were added at
@@ -155,13 +155,13 @@ more depth on C<object_states> later:
     $self->_start_emitter;
   }
 
-  sub p_emitter_started {
+  sub s_emitter_started {
     my ($kernel, $self) = @_[KERNEL, OBJECT];
     ## Our Emitter's Session has started.
     ## Do some initialization within our Emitter, for example
   }
 
-  sub p_increment_count {
+  sub s_increment_count {
     my ($kernel, $self) = @_[KERNEL, OBJECT];
     $_[HEAP]->{count} += $_[ARG0] || 1;
     $self->emit( 'counter_incremented', $_[HEAP]->{count} );
@@ -243,8 +243,32 @@ FIXME link to more on plugin register handlers in plugins section
 
 =item pluggable_type_prefixes
 
-FIXME quickly explain process() vs emit() + PROCESS vs NOTIFY
-      links down to Plugin section and MooX::Role::Pluggable
+The Emitter is aware of two different L<MooX::Role::Pluggable> 
+'event types': C<PROCESS> (events that are synchronously plugin-processed 
+only) and C<NOTIFY> (events that are synchronously or asynchronously 
+dispatched to plugins and subscribed listening Sessions).
+
+The default prefix for a C<NOTIFY> event is C<N>. 
+The default for a C<PROCESS> event is C<P>.
+
+You can alter the prefixes via a hash reference passed to 
+B<pluggable_type_prefixes>:
+
+  ## Configured via constructor, for example:
+  my $emitter = My::Emitter->new(
+    pluggable_type_prefixes => {
+      PROCESS => 'Proc',
+      NOTIFY  => 'Notify',
+    },
+  );
+
+These prefixes automatically have a '_' appended when used:
+
+  ## Given a NOTIFY prefix of "Notify":
+  $emitter->emit('my_event');
+  ## --> Dispatched to the Emitter and its plugins as 'Notify_my_event'
+
+We'll cover L</"PROCESS vs NOTIFY"> a bit more when we demonstrate plugins.
 
 =back
 
@@ -258,7 +282,7 @@ work internally via its own states. At the very least, you might want to
 map the C<emitter_started> event to some handler.
 
 Earlier, we showed an 'increment_count' state that was mapped to the 
-'p_increment_count' method via C<object_states>. (It's important to note 
+'s_increment_count' method via C<object_states>. (It's important to note 
 that these object_states have to be defined before C<_start_emitter> is 
 called -- it's actually possible to execute anonymous code references as 
 if they were predefined states, however; see L</"Dispatch within the 
@@ -320,15 +344,14 @@ arbitrary events to subscribed listeners:
 
 Loading plugins is optional, but if they are loaded, emitted events 
 are dispatched to the Emitter's session first, then to loaded 
-plugins, then (if the event wasn't eaten by plugins FIXME link to 
-plugins section) broadcast to subscribed listeners.
+plugins, then (if the event wasn't eaten by plugins, which we'll cover in  
+L</"Controlling event lifetime">) broadcast to subscribed listeners.
 
 Emitted events are called "NOTIFY" events in conjunction with 
 the plugin pipeline provided by L<MooX::Role::Pluggable> -- this is in 
 contrast to "PROCESS" type events, which are plugin-processed 
 immediately but never sent to subscribed 
-listeners. See L<MooX::Role::POE::Emitter/"process"> and FIXME link to 
-plugins section
+listeners.
 
 =head2 Dispatch within the Emitter
 
