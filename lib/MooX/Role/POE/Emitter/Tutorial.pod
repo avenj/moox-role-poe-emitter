@@ -239,7 +239,8 @@ L</MooX::Role::Pluggable/"_pluggable_init"> for more details) -- the
 B<register_prefix> is prepended to 'register' and 'unregister' events 
 dispatched to plugins at load-time.
 
-FIXME link to more on plugin register handlers in plugins section
+We'll demonstrate plugin registration handler methods in the section below 
+regarding L</"PLUGINS">.
 
 =item pluggable_type_prefixes
 
@@ -436,8 +437,6 @@ this timer if needed:
 
   $emitter->timer_del( $timer_id );
 
-FIXME mention emitted notifications
-
 =head2 Stopping your Emitter
 
 Unlike a normal L<POE::Session>, which goes away if it has no alias and 
@@ -580,6 +579,7 @@ L<MooX::Role::POE::Emitter/"emit"> and L<MooX::Role::Pluggable>.
 
 =head2 Writing a plugin
 
+
 FIXME brief example with register handlers and a P_ / N_ handler
 
 =head1 LISTENERS
@@ -590,11 +590,75 @@ A listener/subscriber is just a regular L<POE::Session> that sends a
 C<subscribe> event to your Emitter for some set of events (or 'all' -- 
 see L</"Subscribing to emitted events">, below).
 
-FIXME
+For example, here's a complete listener as a Moo class. It creates a 
+L<POE::Session> when ->spawn() is called and subscribes to receive all 
+events.
+
+  package My::Listener;
+  use POE;
+  use Moo;
+
+  ## This listener is told about the Emitter's object at
+  ## construction time (but it doesn't have to be -- one could
+  ## just as easily pass the Emitter's object, alias, or Session
+  ## ID to a spawn() method instead):
+  has 'emitter' => (
+    is       => 'ro',
+    required => 1
+  );
+
+  ## ->spawn() will start the listener's Session.
+  sub spawn {
+    my ($self) = @_;
+
+    ## Set up a POE::Session with some states defined as methods
+    ## called on the '$self' object:
+    POE::Session->create(
+      object_states => [
+        $self => [
+          '_start',
+          'emitted_event_one',
+          'emitted_event_two',
+        ],
+      ],
+    );
+  }
+
+  sub _start {
+    my ($kernel, $self) = @_[KERNEL, OBJECT];
+
+    ## Subscribe to all events when the listener's Session starts.
+
+    $kernel->post( $self->emitter->session_id,
+      'subscribe',
+      'all'
+    );
+  }
+
+  sub emitted_event_one {
+    my ($kernel, $self) = @_[KERNEL, OBJECT];
+    my $first_arg = $_[ARG0];
+
+    . . .
+
+    ## Emit event_two, for example
+    $self->emitter->emit( 'event_two', $first_arg );
+  }
+
+  sub emitted_event_two {
+    my ($kernel, $self) = @_[KERNEL, OBJECT];
+    my @args = @_[ARG0 .. $#_];
+
+    . . .
+  }
 
 =head2 Subscribing to emitted events
 
-FIXME
+Posting a 'subscribe' event to the Emitter's Session (via alias or 
+session_id) registers to receieve events:
+
+FIXME elaboration
+FIXME notes on unsubscribe 'all' vs empty unsubscribe?
 
 =head2 Receiving events
 
