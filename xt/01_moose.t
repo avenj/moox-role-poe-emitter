@@ -13,10 +13,11 @@ use strict; use warnings FATAL => 'all';
     MyEmitter;
   use strict; use warnings FATAL => 'all';
   use Moose;
-#  with 'MooX::Role::Pluggable', 'MooX::Role::POE::Emitter';
-#  with 'MooX::Role::Pluggable';
 
-  ## Turns out this should pass as-is.
+  ## Turns out this should pass as-is ..
+  ## .. but a Moo bug means you need:
+  ##  'with "MooX::Role::Pluggable"';
+  ##  'with "MooX::Role::POE::Emitter"';
   ## FIXME depend on newer Moo if RT bug gets fixed
   with 'MooX::Role::POE::Emitter';
 
