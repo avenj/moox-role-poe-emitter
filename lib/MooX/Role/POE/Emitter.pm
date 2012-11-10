@@ -269,17 +269,18 @@ sub timer_del {
 sub __emitter_timer_del {
   my ($kernel, $self, $alarm_id) = @_[KERNEL, OBJECT, ARG0];
 
-  if ( my @deleted = $poe_kernel->alarm_remove($alarm_id) ) {
-    my ($event, undef, $params) = @deleted;
-    $self->emit( $self->event_prefix . 'timer_deleted',
+  my @deleted = $poe_kernel->alarm_remove($alarm_id);
+  return unless @deleted;
+
+  my ($event, undef, $params) = @deleted;
+
+  $self->emit( $self->event_prefix . 'timer_deleted',
       $alarm_id,
       $event,
       @{$params||[]}
-    );
-    return $params
-  }
+  );
 
-  return
+  return $params
 }
 
 ## yield/call provide post()/call() frontends.
