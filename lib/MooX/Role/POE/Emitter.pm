@@ -95,6 +95,15 @@ has 'session_id' => (
   default   => sub { -1 },
 );
 
+has 'shutdown_signal' => (
+  ## FIXME undocumented/untested at the moment
+  lazy      => 1,
+  is        => 'ro',
+  isa       => Str,
+  predicate => 'has_shutdown_signal',
+  writer    => 'set_shutdown_signal',
+  default   => sub { 'SHUTDOWN_EMITTER' },
+);
 
 has '__emitter_reg_sessions' => (
   ## ->{ $session_id } = { refc => $ref_count, id => $id };
@@ -164,6 +173,8 @@ sub _start_emitter {
         __emitter_sigdie
 
         __emitter_reset_alias
+
+        __emitter_sig_shutdown
       / ],
 
       (
@@ -412,6 +423,14 @@ sub __emitter_start {
 
   $kernel->sig('DIE', '__emitter_sigdie' );
 
+  $kernel->sig(
+    ( 
+      $self->has_shutdown_signal ?
+        $self->shutdown_signal : 'SHUTDOWN_EMITTER'
+    ),
+    '__emitter_sig_shutdown'
+  );
+
   $kernel->alias_set( $self->alias );
 
   my $s_id = $sender->ID;
@@ -470,6 +489,12 @@ sub _emitter_default {
   $self->process( $event, @$args )
     unless $event =~ /^_/
     or $event =~ /^emitter_(?:started|stopped)$/ ;
+}
+
+sub __emitter_sig_shutdown {
+  my ($kernel, $self) = @_[KERNEL, OBJECT];
+  ## FIXME no tests at the moment ...
+  $self->call('shutdown_emitter', @_[ARG2 .. $#_] )
 }
 
 sub __emitter_sigdie {
