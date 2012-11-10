@@ -12,8 +12,6 @@ use MooX::Types::MooseLike::Base qw/:all/;
 
 use MooX::Role::Pluggable::Constants;
 
-use Scalar::Util 'blessed';
-
 sub E_TAG () { "Emitter Running" }
 
 ##
@@ -90,6 +88,7 @@ sub _trigger_object_states {
     _start
     _stop
     _default
+    emit
     register
     unregister
     subscribe
