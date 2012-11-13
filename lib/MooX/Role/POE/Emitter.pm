@@ -630,7 +630,7 @@ MooX::Role::POE::Emitter - Pluggable POE event emitter role for cows
         ## Maybe include from named arguments, for example:
         (
           ref $args{object_states} eq 'ARRAY' ?
-            @{ $args{object_states } : ()
+            @{ $args{object_states} } : ()
         ),
       ],
     );
