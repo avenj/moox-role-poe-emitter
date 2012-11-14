@@ -421,23 +421,14 @@ sub __emitter_start {
 
   $self->set_session_id( $session->ID );
 
-  $kernel->sig('DIE', '__emitter_sigdie' );
-
-  $kernel->sig(
-    ( 
-      $self->has_shutdown_signal ?
-        $self->shutdown_signal : 'SHUTDOWN_EMITTER'
-    ),
-    '__emitter_sig_shutdown'
-  );
-
   $kernel->alias_set( $self->alias );
 
-  my $s_id = $sender->ID;
+  $kernel->sig('DIE', '__emitter_sigdie' );
+  $kernel->sig( $self->shutdown_signal, '__emitter_sig_shutdown' );
 
   unless ($sender == $kernel) {
     ## Have a parent session.
-
+    my $s_id = $sender->ID;
     $kernel->refcount_increment( $s_id, E_TAG );
     $self->__incr_ses_refc( $s_id );
     $self->__reg_ses_id( $s_id );
@@ -646,7 +637,7 @@ MooX::Role::POE::Emitter - Pluggable POE event emitter role for cows
         ## Maybe include from named arguments, for example:
         (
           ref $args{object_states} eq 'ARRAY' ?
-            @{ $args{object_states } : ()
+            @{ $args{object_states} } : ()
         ),
       ],
     );
