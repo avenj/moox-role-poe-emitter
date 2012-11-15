@@ -7,8 +7,8 @@ use MxreTestUtils;
 
 my $emitter_got      = {};
 my $emitter_expected = {
-  'Got emitter_started' => 1,
-  'Got emitter_stopped' => 1,
+  'Got emitter_started' => 2,
+  'Got emitter_stopped' => 2,
 };
 
 {  package
@@ -61,13 +61,13 @@ my $emitter_expected = {
 
    sub _start {
      my ($kernel, $self) = @_[KERNEL, OBJECT];
-     my $emitter = My::Emitter->new;
-     $kernel->post( $emitter, 'subscribe', 'all' );
+     my @emitters = map { My::Emitter->new } 1 .. 2;
+     $kernel->post( $_, 'subscribe', 'all' )
+       for @emitters;
    }
 
    sub emitted_registered {
      my ($kernel, $self) = @_[KERNEL, OBJECT];
-     pass("Got emitted_registered");
      $kernel->signal( $kernel, 'SHUTDOWN_EMITTER' );
    }
 }
