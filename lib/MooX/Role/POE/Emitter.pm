@@ -96,7 +96,6 @@ has 'session_id' => (
 );
 
 has 'shutdown_signal' => (
-  ## FIXME undocumented/untested at the moment
   lazy      => 1,
   is        => 'ro',
   isa       => Str,
@@ -484,8 +483,7 @@ sub _emitter_default {
 
 sub __emitter_sig_shutdown {
   my ($kernel, $self) = @_[KERNEL, OBJECT];
-  ## FIXME no tests at the moment ...
-  $self->call('shutdown_emitter', @_[ARG2 .. $#_] )
+  $self->yield('shutdown_emitter', @_[ARG2 .. $#_] )
 }
 
 sub __emitter_sigdie {
@@ -786,6 +784,11 @@ Set via B<set_register_prefix>
 B<session_id> is our emitter's L<POE::Session> ID, set when our Session is 
 started via L</"_start_emitter">.
 
+=head4 shutdown_signal
+
+B<shutdown_signal> is the name of the L<POE> signal that will trigger a 
+shutdown (used to shut down multiple Emitters). See L</"Signals">
+
 =head3 _start_emitter
 
 B<_start_emitter()> should be called on our object to spawn the actual
@@ -1013,6 +1016,18 @@ Clears a pending L</timer>.
 A prefixed (L</event_prefix>) 'timer_deleted' event is emitted when a timer 
 is deleted. Arguments are the removed alarm ID, the event name or coderef, 
 and any event parameters, respectively.
+
+=head2 Signals
+
+=head3 Shutdown Signal
+
+The attribute L</shutdown_signal> defines a POE signal that will trigger a 
+shutdown; it defaults to C<SHUTDOWN_EMITTER>:
+
+  ## Shutdown *all* emitters (with a default shutdown_signal()):
+  $poe_kernel->signal( $poe_kernel, 'SHUTDOWN_EMITTER' );
+
+See L<POE::Kernel/"Signal Watcher Methods"> for details on L<POE> signals.
 
 =head2 Moose compatibility
 
