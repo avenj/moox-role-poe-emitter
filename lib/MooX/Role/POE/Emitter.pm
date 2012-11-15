@@ -1,5 +1,5 @@
 package MooX::Role::POE::Emitter;
-our $VERSION = '0.10_01';
+our $VERSION = '0.11';
 
 use Moo::Role;
 
