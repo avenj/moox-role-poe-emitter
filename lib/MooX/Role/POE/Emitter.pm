@@ -1,5 +1,5 @@
 package MooX::Role::POE::Emitter;
-our $VERSION = '0.11';
+our $VERSION = '0.11_01';
 
 use Moo::Role;
 
@@ -15,7 +15,7 @@ use MooX::Role::Pluggable::Constants;
 sub E_TAG () { "Emitter Running" }
 
 ##
-use namespace::clean -except => 'meta';
+use namespace::clean;
 
 
 with 'MooX::Role::Pluggable';
@@ -477,8 +477,8 @@ sub _emitter_default {
   ## Dispatch it to any appropriate P_$event handlers.
 
   $self->process( $event, @$args )
-    unless $event =~ /^_/
-    or $event =~ /^emitter_(?:started|stopped)$/ ;
+    unless index($event, '_') == 0
+    or $event =~ /^emitter_(?:started|stopped)$/;
 }
 
 sub __emitter_sig_shutdown {
@@ -1049,7 +1049,8 @@ L<Role::Tiny>
 
 Jon Portnoy <avenj@cobaltirc.org>
 
-Derived from L<POE::Component::Syndicator>-0.06 by BINGOS, HINRIK, 
+Written from the ground up, but conceptually derived from 
+L<POE::Component::Syndicator>-0.06 by BINGOS, HINRIK, 
 APOCAL et al. That will probably do you for non-Moo(se) use cases; I 
 needed something cow-like that worked with L<MooX::Role::Pluggable>. 
 
