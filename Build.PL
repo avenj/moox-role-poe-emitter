@@ -44,7 +44,7 @@ my $build = $class->new(
     'strictures'                   => 1,
 
     'Moo'                          => 1,
-    'MooX::Role::Pluggable'        => 0,
+    'MooX::Role::Pluggable'        => '0.11',
     'MooX::Types::MooseLike::Base' => '0.15',
 
     'namespace::clean'             => '0.23',
