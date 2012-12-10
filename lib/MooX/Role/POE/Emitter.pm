@@ -1,5 +1,5 @@
 package MooX::Role::POE::Emitter;
-our $VERSION = '0.10_01';
+our $VERSION = '0.11_01';
 
 use Moo::Role;
 
@@ -15,7 +15,7 @@ use MooX::Role::Pluggable::Constants;
 sub E_TAG () { "Emitter Running" }
 
 ##
-use namespace::clean -except => 'meta';
+use namespace::clean;
 
 
 with 'MooX::Role::Pluggable';
@@ -135,6 +135,14 @@ has 'session_id' => (
   default   => sub { -1 },
 );
 
+has 'shutdown_signal' => (
+  lazy      => 1,
+  is        => 'ro',
+  isa       => Str,
+  predicate => 'has_shutdown_signal',
+  writer    => 'set_shutdown_signal',
+  default   => sub { 'SHUTDOWN_EMITTER' },
+);
 
 
 has '__emitter_reg_sessions' => (
@@ -205,6 +213,8 @@ sub _start_emitter {
         __emitter_sigdie
 
         __emitter_reset_alias
+
+        __emitter_sig_shutdown
       / ],
 
       (
@@ -419,15 +429,14 @@ sub __emitter_start {
 
   $self->set_session_id( $session->ID );
 
-  $kernel->sig('DIE', '__emitter_sigdie' );
-
   $kernel->alias_set( $self->alias );
 
-  my $s_id = $sender->ID;
+  $kernel->sig('DIE', '__emitter_sigdie' );
+  $kernel->sig( $self->shutdown_signal, '__emitter_sig_shutdown' );
 
   unless ($sender == $kernel) {
     ## Have a parent session.
-
+    my $s_id = $sender->ID;
     $kernel->refcount_increment( $s_id, E_TAG );
     $self->__incr_ses_refc( $s_id );
     $self->__reg_ses_id( $s_id );
@@ -477,8 +486,13 @@ sub _emitter_default {
   ## Dispatch it to any appropriate P_$event handlers.
 
   $self->process( $event, @$args )
-    unless $event =~ /^_/
-    or $event =~ /^emitter_(?:started|stopped)$/ ;
+    unless index($event, '_') == 0
+    or $event =~ /^emitter_(?:started|stopped)$/;
+}
+
+sub __emitter_sig_shutdown {
+  my ($kernel, $self) = @_[KERNEL, OBJECT];
+  $self->yield('shutdown_emitter', @_[ARG2 .. $#_] )
 }
 
 sub __emitter_sigdie {
@@ -779,6 +793,11 @@ Set via B<set_register_prefix>
 B<session_id> is our emitter's L<POE::Session> ID, set when our Session is 
 started via L</"_start_emitter">.
 
+=head4 shutdown_signal
+
+B<shutdown_signal> is the name of the L<POE> signal that will trigger a 
+shutdown (used to shut down multiple Emitters). See L</"Signals">
+
 =head3 _start_emitter
 
 B<_start_emitter()> should be called on our object to spawn the actual
@@ -1007,6 +1026,18 @@ A prefixed (L</event_prefix>) 'timer_deleted' event is emitted when a timer
 is deleted. Arguments are the removed alarm ID, the event name or coderef, 
 and any event parameters, respectively.
 
+=head2 Signals
+
+=head3 Shutdown Signal
+
+The attribute L</shutdown_signal> defines a POE signal that will trigger a 
+shutdown; it defaults to C<SHUTDOWN_EMITTER>:
+
+  ## Shutdown *all* emitters (with a default shutdown_signal()):
+  $poe_kernel->signal( $poe_kernel, 'SHUTDOWN_EMITTER' );
+
+See L<POE::Kernel/"Signal Watcher Methods"> for details on L<POE> signals.
+
 =head2 Moose compatibility
 
 This Role "seems to be" Moose-compatible as of version 0.07, but you'll 
@@ -1031,10 +1062,11 @@ L<Role::Tiny>
 
 Jon Portnoy <avenj@cobaltirc.org>
 
-Originally derived from L<POE::Component::Syndicator>-0.06 by BINGOS, 
-HINRIK, APOCAL et al. That may do you for non-Moo(se) use cases; I 
-needed something cow-like that worked with L<MooX::Role::Pluggable>, and 
-made a few turns along the way.
+Written from the ground up, but conceptually derived from 
+L<POE::Component::Syndicator>-0.06 by BINGOS, HINRIK, 
+APOCAL et al. That will probably do you for non-Moo(se) use cases; I 
+needed something cow-like that worked with L<MooX::Role::Pluggable> and made a
+few turns along the way.. 
 
 Licensed under the same terms as perl5.
 
