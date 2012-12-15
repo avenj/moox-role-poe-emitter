@@ -1029,15 +1029,6 @@ shutdown; it defaults to C<SHUTDOWN_EMITTER>:
 
 See L<POE::Kernel/"Signal Watcher Methods"> for details on L<POE> signals.
 
-=head2 Moose compatibility
-
-This Role "seems to be" Moose-compatible as of version 0.07, but you'll 
-need to consume L<MooX::Role::Pluggable> on its own, as far as I can tell:
-
-  package MyEmitter;
-  use Moose;
-  with 'MooX::Role::Pluggable', 'MooX::Role::POE::Emitter';
-
 =head1 SEE ALSO
 
 For details regarding POE, see L<POE>, L<POE::Kernel>, L<POE::Session>

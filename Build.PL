@@ -43,7 +43,7 @@ my $build = $class->new(
 
     'strictures'                   => 1,
 
-    'Moo'                          => 1,
+    'Moo'                          => '1.000007',
     'MooX::Role::Pluggable'        => '0.11',
     'MooX::Types::MooseLike::Base' => '0.15',
 
