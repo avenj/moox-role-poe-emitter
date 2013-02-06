@@ -623,6 +623,7 @@ MooX::Role::POE::Emitter - Pluggable POE event emitter role for cows
         $self => {
           ## Add some extra handlers to your Emitter
           'emitter_started' => '_emitter_started',
+          'emitter_stopped' => '_emitter_stopped',
         },
 
         ## Include any object_states we had previously
@@ -654,6 +655,10 @@ MooX::Role::POE::Emitter - Pluggable POE event emitter role for cows
     ## A POE state called when the emitter's session starts.
     ## (Analogous to a normal '_start' handler)
     ## Could load plugins, do initialization, etc.
+  }
+
+  sub _emitter_stopped {
+    ## Opposite of 'emitter_started'
   }
 
   ## A listening POE::Session:
