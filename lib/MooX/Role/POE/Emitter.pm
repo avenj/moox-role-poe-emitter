@@ -1,5 +1,4 @@
 package MooX::Role::POE::Emitter;
-our $VERSION = '0.11_01';
 
 use Moo::Role;
 
@@ -478,7 +477,8 @@ sub _emitter_default {
 
   $self->process( $event, @$args )
     unless index($event, '_') == 0
-    or $event =~ /^emitter_(?:started|stopped)$/;
+    or     index($event, 'emitter_') == 0
+    and $event =~ /^emitter_(?:started|stopped)$/;
 }
 
 sub __emitter_sig_shutdown {
