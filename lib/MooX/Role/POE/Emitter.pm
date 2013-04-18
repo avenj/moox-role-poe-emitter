@@ -313,7 +313,7 @@ sub _trigger_object_states {
     unsubscribe
   /;
 
-  for (my $i=1; $i <= (scalar(@$states) - 1 ); $i+=2 ) {
+  for (my $i=1; $i <= $#$states; $i+=2 ) {
     my $events = $states->[$i];
     my $evarr = ref $events eq 'ARRAY' ? $events : [ keys %$events ];
 
