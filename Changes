@@ -1,6 +1,15 @@
 Revision history for Perl module MooX::Role::POE::Emitter
 
+0.120002 2013-08-24
+
+  - Drop MooX::Types::MooseLike in favor of Type::Tiny / Types::Standard
+
+  - Fix 'Changes' to conform to CPAN::Changes::Spec
+
+  - Minor cleanups
+
 0.120001 2013-02-05
+
   - Depend on newer Moo & MooX::Role::Pluggable
     (Fixes Moose compat, see xt/)
 
