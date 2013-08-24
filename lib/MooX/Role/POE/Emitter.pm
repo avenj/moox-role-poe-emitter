@@ -1,7 +1,4 @@
 package MooX::Role::POE::Emitter;
-
-use Moo::Role;
-
 use Carp;
 use strictures 1;
 
@@ -11,16 +8,14 @@ use MooX::Role::Pluggable::Constants;
 
 use Types::Standard -types;
 
-sub E_TAG () { "Emitter Running" }
-
-##
-use namespace::clean;
+sub E_TAG () { 'Emitter Running' }
 
 
+use Moo::Role;
 with 'MooX::Role::Pluggable';
 
 
-has 'alias' => (
+has alias => (
   lazy      => 1,
   is        => 'ro',
   isa       => Str,
@@ -29,7 +24,7 @@ has 'alias' => (
   default   => sub { "$_[0]" },
 );
 
-around 'set_alias' => sub {
+around set_alias => sub {
   my ($orig, $self, $value) = @_;
 
   if ( $poe_kernel->alias_resolve( $self->session_id ) ) {
@@ -40,16 +35,16 @@ around 'set_alias' => sub {
   $self->$orig($value)
 };
 
-has 'event_prefix' => (
+has event_prefix => (
   lazy      => 1,
   is        => 'ro',
   isa       => Str,
   predicate => 'has_event_prefix',
   writer    => 'set_event_prefix',
-  default   => sub { "emitted_" },
+  default   => sub { 'emitted_' },
 );
 
-has 'pluggable_type_prefixes' => (
+has pluggable_type_prefixes => (
   ## Optionally remap PROCESS / NOTIFY types
   lazy      => 1,
   is        => 'ro',
@@ -64,27 +59,27 @@ has 'pluggable_type_prefixes' => (
   },
 );
 
-has 'object_states' => (
+has object_states => (
   lazy      => 1,
   is        => 'ro',
   isa       => ArrayRef,
   predicate => 'has_object_states',
   writer    => 'set_object_states',
-  trigger   => 1,
+  trigger   => '_trigger_object_states',
   default   => sub { [] },
 );
 
-has 'register_prefix' => (
+has register_prefix => (
   lazy      => 1,
   is        => 'ro',
   isa       => Str,
   predicate => 'has_register_prefix',
   writer    => 'set_register_prefix',
   ## Emitter_register / Emitter_unregister
-  default   => sub { "Emitter_" },
+  default   => sub { 'Emitter_' },
 );
 
-has 'session_id' => (
+has session_id => (
   init_arg  => undef,
   lazy      => 1,
   is        => 'ro',
@@ -94,7 +89,7 @@ has 'session_id' => (
   default   => sub { -1 },
 );
 
-has 'shutdown_signal' => (
+has shutdown_signal => (
   lazy      => 1,
   is        => 'ro',
   isa       => Str,
@@ -103,7 +98,7 @@ has 'shutdown_signal' => (
   default   => sub { 'SHUTDOWN_EMITTER' },
 );
 
-has '__emitter_reg_sessions' => (
+has __emitter_reg_sessions => (
   ## ->{ $session_id } = { refc => $ref_count, id => $id };
   lazy    => 1,
   is      => 'ro',
@@ -111,7 +106,7 @@ has '__emitter_reg_sessions' => (
   default => sub { +{} },
 );
 
-has '__emitter_reg_events' => (
+has __emitter_reg_events => (
   ## ->{ $event }->{ $session_id } = 1
   lazy    => 1,
   is      => 'ro',
@@ -559,7 +554,7 @@ sub __emitter_register {
     $self->__incr_ses_refc( $s_id );
   }
 
-  $kernel->post( $s_id, $self->event_prefix . "registered", $self )
+  $kernel->post( $s_id, $self->event_prefix . 'registered', $self )
 }
 
 sub __emitter_unregister {
