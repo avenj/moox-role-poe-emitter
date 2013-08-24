@@ -7,9 +7,9 @@ use strictures 1;
 
 use POE;
 
-use MooX::Types::MooseLike::Base qw/:all/;
-
 use MooX::Role::Pluggable::Constants;
+
+use Types::Standard -types;
 
 sub E_TAG () { "Emitter Running" }
 
