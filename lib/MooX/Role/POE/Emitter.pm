@@ -65,7 +65,7 @@ has object_states => (
   isa       => ArrayRef,
   predicate => 'has_object_states',
   writer    => 'set_object_states',
-  trigger   => '_trigger_object_states',
+  trigger   => 1,
   default   => sub { [] },
 );
 
