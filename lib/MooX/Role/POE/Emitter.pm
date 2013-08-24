@@ -10,6 +10,12 @@ use Types::Standard -types;
 
 sub E_TAG () { 'Emitter Running' }
 
+=pod
+
+=for Pod::Coverage E_TAG
+
+=cut
+
 
 use Moo::Role;
 with 'MooX::Role::Pluggable';
