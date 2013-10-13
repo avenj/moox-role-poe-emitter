@@ -248,7 +248,7 @@ sub __emitter_timer_del {
       @{$params||[]}
   );
 
-  return $params
+  $params
 }
 
 ## yield/call provide post()/call() frontends.
@@ -622,13 +622,13 @@ MooX::Role::POE::Emitter - Pluggable POE event emitter role for cows
     $self->set_object_states(
       [
         $self => {
-          ## Add some extra handlers to your Emitter
+          ## Add some extra handlers to our Emitter:
           'emitter_started' => '_emitter_started',
           'emitter_stopped' => '_emitter_stopped',
         },
 
         ## Include any object_states we had previously
-        ## (e.g. states added at construction time)
+        ## (e.g. states added at construction time):
         (
           $self->has_object_states ?
             @{ $self->object_states } : ()
@@ -648,6 +648,7 @@ MooX::Role::POE::Emitter - Pluggable POE event emitter role for cows
 
   sub shutdown {
     my ($self) = @_;
+    ## .. do some cleanup, whatever ..
     $self->_shutdown_emitter;
   }
 
@@ -667,6 +668,7 @@ MooX::Role::POE::Emitter - Pluggable POE event emitter role for cows
   use POE;
 
   sub spawn {
+    # This spawn() takes an alias/session to subscribe to:
     my ($self, $alias_or_sessionID) = @_;
 
     POE::Session->create(
@@ -679,17 +681,16 @@ MooX::Role::POE::Emitter - Pluggable POE event emitter role for cows
       ],
     );
 
-    ## Subscribe to all events from $alias_or_sessionID
-    $poe_kernel->post(
-      $alias_or_sessionID,
-      'subscribe',
-      'all'
+    ## Subscribe to all events from $alias_or_sessionID:
+    $poe_kernel->post( 
+      $alias_or_sessionID => subscribe => 'all'
     );
   }
 
   sub emitted_my_event {
     my ($kernel, $self) = @_[KERNEL, OBJECT];
     ## Received 'my_event' from Emitter
+    my @args = @_[ARG0 .. $#_];
   }
 
 =head1 DESCRIPTION
