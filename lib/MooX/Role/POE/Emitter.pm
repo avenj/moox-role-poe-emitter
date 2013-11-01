@@ -663,6 +663,13 @@ MooX::Role::POE::Emitter - Pluggable POE event emitter role for cows
     ## Opposite of 'emitter_started'
   }
 
+  sub do_something {
+    my ($self, @things) = @_;
+    # ... do some work ...
+    # Emit an event:
+    $self->emit( did_stuff => @things )
+  }
+
   ## A listening POE::Session:
   package My::Listener;
   use POE;
@@ -687,9 +694,9 @@ MooX::Role::POE::Emitter - Pluggable POE event emitter role for cows
     );
   }
 
-  sub emitted_my_event {
+  sub emitted_did_stuff {
     my ($kernel, $self) = @_[KERNEL, OBJECT];
-    ## Received 'my_event' from Emitter
+    ## Received 'did_stuff' from Emitter
     my @args = @_[ARG0 .. $#_];
   }
 
