@@ -72,12 +72,12 @@ has pluggable_type_prefixes => (
 has object_states => (
   lazy      => 1,
   is        => 'ro',
-  isa       => ImmutableArray,
+  isa       => ArrayObj,
   coerce    => 1,
   predicate => 'has_object_states',
   writer    => 'set_object_states',
   trigger   => 1,
-  default   => sub { immarray },
+  default   => sub { array },
 );
 
 sub _trigger_object_states {
@@ -101,17 +101,15 @@ sub _trigger_object_states {
     unsubscribe
   / )->map(sub { $_ => 1 })->inflate;
 
-  $states->tuples(2)->map(sub {
-    my (undef, $events) = @$_;
+  for my $pair ($states->tuples(2)->all) {
+    my (undef, $events) = @$pair;
     my $evarr = reftype $events eq 'ARRAY' ? array(@$events) 
                 : reftype $events eq 'HASH'  ? array(keys %$events)
                 : confess "Expected ARRAY or HASH but got $events";
     $evarr->map(
       sub { confess "Disallowed handler: $_" if $disallowed->exists($_) }
     );
-  });
-
-  $states
+  }
 }
 
 
