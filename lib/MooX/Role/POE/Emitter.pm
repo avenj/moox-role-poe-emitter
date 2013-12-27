@@ -1,12 +1,17 @@
 package MooX::Role::POE::Emitter;
-use Carp;
 use strictures 1;
 
-use POE;
+use feature 'state';
+use Carp;
+use Scalar::Util 'reftype';
+
+use List::Objects::WithUtils;
+use List::Objects::Types -all;
+use Types::Standard      -types;
 
 use MooX::Role::Pluggable::Constants;
 
-use Types::Standard -types;
+use POE;
 
 sub E_TAG () { 'Emitter Running' }
 
@@ -17,7 +22,7 @@ sub E_TAG () { 'Emitter Running' }
 =cut
 
 
-use Moo::Role;
+use Moo::Role; use MooX::late;
 with 'MooX::Role::Pluggable';
 
 
@@ -34,8 +39,8 @@ around set_alias => sub {
   my ($orig, $self, $value) = @_;
 
   if ( $poe_kernel->alias_resolve( $self->session_id ) ) {
-    $self->call( '__emitter_reset_alias', $value );
-    $self->emit( $self->event_prefix . 'alias_set', $value );
+    $self->call( __emitter_reset_alias => $value );
+    $self->emit( $self->event_prefix . 'alias_set' => $value );
   }
 
   $self->$orig($value)
@@ -54,26 +59,61 @@ has pluggable_type_prefixes => (
   ## Optionally remap PROCESS / NOTIFY types
   lazy      => 1,
   is        => 'ro',
-  isa       => HashRef,
+  isa       => HashObj,
+  coerce    => 1,
   predicate => 'has_pluggable_type_prefixes',
   writer    => 'set_pluggable_type_prefixes',
   default   => sub {
-   +{ 
-      PROCESS => 'P',
-      NOTIFY  => 'N',
-    }
+    hash( PROCESS => 'P', NOTIFY  => 'N' )
   },
 );
+
 
 has object_states => (
   lazy      => 1,
   is        => 'ro',
-  isa       => ArrayRef,
+  isa       => ImmutableArray,
+  coerce    => 1,
   predicate => 'has_object_states',
   writer    => 'set_object_states',
   trigger   => 1,
-  default   => sub { [] },
+  default   => sub { immarray },
 );
+
+sub _trigger_object_states {
+  my ($self, $states) = @_;
+
+  $states = array(%$states) if reftype $states eq 'HASH';
+
+  confess "object_states() should be an ARRAY or HASH"
+    unless ref $states and reftype $states eq 'ARRAY';
+
+  $states = array(@$states) unless is_ArrayObj $states;
+
+  state $disallowed = array( qw/
+    _start
+    _stop
+    _default
+    emit
+    register
+    unregister
+    subscribe
+    unsubscribe
+  / )->map(sub { $_ => 1 })->inflate;
+
+  $states->tuples(2)->map(sub {
+    my (undef, $events) = @$_;
+    my $evarr = reftype $events eq 'ARRAY' ? array(@$events) 
+                : reftype $events eq 'HASH'  ? array(keys %$events)
+                : confess "Expected ARRAY or HASH but got $events";
+    $evarr->map(
+      sub { confess "Disallowed handler: $_" if $disallowed->exists($_) }
+    );
+  });
+
+  $states
+}
+
 
 has register_prefix => (
   lazy      => 1,
@@ -104,20 +144,21 @@ has shutdown_signal => (
   default   => sub { 'SHUTDOWN_EMITTER' },
 );
 
+## FIXME move these to internal objs:
 has __emitter_reg_sessions => (
   ## ->{ $session_id } = { refc => $ref_count, id => $id };
   lazy    => 1,
   is      => 'ro',
-  isa     => HashRef,
-  default => sub { +{} },
+  isa     => HashObj,
+  default => sub { hash },
 );
 
 has __emitter_reg_events => (
   ## ->{ $event }->{ $session_id } = 1
   lazy    => 1,
   is      => 'ro',
-  isa     => HashRef,
-  default => sub { +{} },
+  isa     => HashObj,
+  default => sub { hash },
 );
 
 
@@ -296,37 +337,6 @@ sub process {
   $self->_pluggable_process( 'PROCESS', $event, \@args )
 }
 
-
-sub _trigger_object_states {
-  my ($self, $states) = @_;
-
-  confess "object_states() should be an ARRAY or HASH"
-    unless ref $states eq 'HASH' or ref $states eq 'ARRAY' ;
-
-  my @disallowed = qw/
-    _start
-    _stop
-    _default
-    emit
-    register
-    unregister
-    subscribe
-    unsubscribe
-  /;
-
-  for (my $i=1; $i <= $#$states; $i+=2 ) {
-    my $events = $states->[$i];
-    my $evarr = ref $events eq 'ARRAY' ? $events : [ keys %$events ];
-
-    for my $ev (@$evarr) {
-      confess "Disallowed handler: $ev"
-        if grep {; $_ eq $ev } @disallowed;
-    }
-
-  }
-
-  $states
-}
 
 
 ## Session ref-counting bits.
