@@ -1,12 +1,17 @@
 package MooX::Role::POE::Emitter;
-use Carp;
 use strictures 1;
 
-use POE;
+use feature 'state';
+use Carp;
+use Scalar::Util 'reftype';
+
+use List::Objects::WithUtils;
+use List::Objects::Types -all;
+use Types::Standard      -types;
 
 use MooX::Role::Pluggable::Constants;
 
-use Types::Standard -types;
+use POE;
 
 sub E_TAG () { 'Emitter Running' }
 
@@ -17,7 +22,7 @@ sub E_TAG () { 'Emitter Running' }
 =cut
 
 
-use Moo::Role;
+use Moo::Role; use MooX::late;
 with 'MooX::Role::Pluggable';
 
 
@@ -34,8 +39,8 @@ around set_alias => sub {
   my ($orig, $self, $value) = @_;
 
   if ( $poe_kernel->alias_resolve( $self->session_id ) ) {
-    $self->call( '__emitter_reset_alias', $value );
-    $self->emit( $self->event_prefix . 'alias_set', $value );
+    $self->call( __emitter_reset_alias => $value );
+    $self->emit( $self->event_prefix . 'alias_set' => $value );
   }
 
   $self->$orig($value)
@@ -54,26 +59,59 @@ has pluggable_type_prefixes => (
   ## Optionally remap PROCESS / NOTIFY types
   lazy      => 1,
   is        => 'ro',
-  isa       => HashRef,
+  isa       => HashObj,
+  coerce    => 1,
   predicate => 'has_pluggable_type_prefixes',
   writer    => 'set_pluggable_type_prefixes',
   default   => sub {
-   +{ 
-      PROCESS => 'P',
-      NOTIFY  => 'N',
-    }
+    hash( PROCESS => 'P', NOTIFY  => 'N' )
   },
 );
+
 
 has object_states => (
   lazy      => 1,
   is        => 'ro',
-  isa       => ArrayRef,
+  isa       => ArrayObj,
+  coerce    => 1,
   predicate => 'has_object_states',
   writer    => 'set_object_states',
   trigger   => 1,
-  default   => sub { [] },
+  default   => sub { array },
 );
+
+sub _trigger_object_states {
+  my ($self, $states) = @_;
+
+  $states = array(%$states) if reftype $states eq 'HASH';
+
+  confess "object_states() should be an ARRAY or HASH"
+    unless ref $states and reftype $states eq 'ARRAY';
+
+  $states = array(@$states) unless is_ArrayObj $states;
+
+  state $disallowed = array( qw/
+    _start
+    _stop
+    _default
+    emit
+    register
+    unregister
+    subscribe
+    unsubscribe
+  / )->map(sub { $_ => 1 })->inflate;
+
+  for my $pair ($states->tuples(2)->all) {
+    my (undef, $events) = @$pair;
+    my $evarr = reftype $events eq 'ARRAY' ? array(@$events) 
+                : reftype $events eq 'HASH'  ? array(keys %$events)
+                : confess "Expected ARRAY or HASH but got $events";
+    $evarr->map(
+      sub { confess "Disallowed handler: $_" if $disallowed->exists($_) }
+    );
+  }
+}
+
 
 has register_prefix => (
   lazy      => 1,
@@ -104,20 +142,21 @@ has shutdown_signal => (
   default   => sub { 'SHUTDOWN_EMITTER' },
 );
 
+## FIXME swap these to internal objs?
 has __emitter_reg_sessions => (
   ## ->{ $session_id } = { refc => $ref_count, id => $id };
   lazy    => 1,
   is      => 'ro',
-  isa     => HashRef,
-  default => sub { +{} },
+  isa     => HashObj,
+  default => sub { hash },
 );
 
 has __emitter_reg_events => (
   ## ->{ $event }->{ $session_id } = 1
   lazy    => 1,
   is      => 'ro',
-  isa     => HashRef,
-  default => sub { +{} },
+  isa     => HashObj,
+  default => sub { hash },
 );
 
 
@@ -177,7 +216,7 @@ sub _start_emitter {
       / ],
 
       (
-        $self->has_object_states ? @{ $self->object_states } : ()
+        $self->has_object_states ? $self->object_states->all : ()
       ),
 
     ],
@@ -206,7 +245,7 @@ sub timer {
     unless defined $time
     and defined $event;
 
-  $self->call( '__emitter_timer_set', $time, $event, @args )
+  $self->call( __emitter_timer_set => $time, $event, @args )
 }
 
 sub __emitter_timer_set {
@@ -215,7 +254,7 @@ sub __emitter_timer_set {
 
   my $alarm_id = $poe_kernel->delay_set( $event, $time, @args );
 
-  $self->emit( $self->event_prefix . 'timer_set',
+  $self->emit( $self->event_prefix . 'timer_set' =>
     $alarm_id,
     $event,
     $time,
@@ -231,7 +270,7 @@ sub timer_del {
   confess "timer_del() expects an alarm ID"
     unless defined $alarm_id;
 
-  $self->call( '__emitter_timer_del', $alarm_id );
+  $self->call( __emitter_timer_del => $alarm_id );
 }
 
 sub __emitter_timer_del {
@@ -242,10 +281,10 @@ sub __emitter_timer_del {
 
   my ($event, undef, $params) = @deleted;
 
-  $self->emit( $self->event_prefix . 'timer_deleted',
-      $alarm_id,
-      $event,
-      @{$params||[]}
+  $self->emit( $self->event_prefix . 'timer_deleted' =>
+    $alarm_id,
+    $event,
+    @{ $params || [] }
   );
 
   $params
@@ -272,7 +311,7 @@ sub emit {
   ## Async NOTIFY event dispatch.
   my ($self, $event, @args) = @_;
 
-  $self->yield( '__emitter_notify', $event, @args );
+  $self->yield( __emitter_notify => $event, @args );
 
   $self
 }
@@ -281,7 +320,7 @@ sub emit_now {
   ## Synchronous NOTIFY event dispatch.
   my ($self, $event, @args) = @_;
 
-  $self->call( '__emitter_notify', $event, @args );
+  $self->call( __emitter_notify => $event, @args );
 
   $self
 }
@@ -293,40 +332,9 @@ sub process {
   ##  and return the EAT value.
 
   ## Dispatched to P_$event :
-  $self->_pluggable_process( 'PROCESS', $event, \@args )
+  $self->_pluggable_process( PROCESS => $event, \@args )
 }
 
-
-sub _trigger_object_states {
-  my ($self, $states) = @_;
-
-  confess "object_states() should be an ARRAY or HASH"
-    unless ref $states eq 'HASH' or ref $states eq 'ARRAY' ;
-
-  my @disallowed = qw/
-    _start
-    _stop
-    _default
-    emit
-    register
-    unregister
-    subscribe
-    unsubscribe
-  /;
-
-  for (my $i=1; $i <= $#$states; $i+=2 ) {
-    my $events = $states->[$i];
-    my $evarr = ref $events eq 'ARRAY' ? $events : [ keys %$events ];
-
-    for my $ev (@$evarr) {
-      confess "Disallowed handler: $ev"
-        if grep {; $_ eq $ev } @disallowed;
-    }
-
-  }
-
-  $states
-}
 
 
 ## Session ref-counting bits.
@@ -358,12 +366,10 @@ sub __reg_ses_id {
 sub __emitter_drop_sessions {
   my ($self) = @_;
 
-  for my $id (keys %{ $self->__emitter_reg_sessions }) {
+  for my $id ($self->__emitter_reg_sessions->keys->all) {
     my $count = $self->__get_ses_refc($id);
     while ( $count-- > 0 ) {
-      $poe_kernel->refcount_decrement(
-        $id, E_TAG
-      )
+      $poe_kernel->refcount_decrement( $id, E_TAG )
     }
 
     delete $self->__emitter_reg_sessions->{$id};
@@ -409,8 +415,7 @@ sub __emitter_notify {
   }
 
   ## Received emitted 'shutdown', drop sessions.
-  $self->__emitter_drop_sessions
-    if $event eq 'shutdown';
+  $self->__emitter_drop_sessions if $event eq 'shutdown';
 }
 
 sub __emitter_start {
@@ -422,8 +427,8 @@ sub __emitter_start {
 
   $kernel->alias_set( $self->alias );
 
-  $kernel->sig('DIE', '__emitter_sigdie' );
-  $kernel->sig( $self->shutdown_signal, '__emitter_sig_shutdown' );
+  $kernel->sig( DIE => '__emitter_sigdie' );
+  $kernel->sig( $self->shutdown_signal => '__emitter_sig_shutdown' );
 
   unless ($sender == $kernel) {
     ## Have a parent session.
@@ -479,7 +484,7 @@ sub _emitter_default {
   $self->process( $event, @$args )
     unless index($event, '_') == 0
     or     index($event, 'emitter_') == 0
-    and $event =~ /^emitter_(?:started|stopped)$/;
+    and    $event =~ /(?:started|stopped)$/;
 }
 
 sub __emitter_sig_shutdown {
@@ -513,7 +518,7 @@ sub _shutdown_emitter {
   ## Opposite of _start_emitter
   my $self = shift;
 
-  $self->call( 'shutdown_emitter', @_ );
+  $self->call( shutdown_emitter => @_ );
 
   1
 }
@@ -527,7 +532,7 @@ sub __shutdown_emitter {
   $self->_pluggable_destroy;
 
   ## Notify sessions.
-  $self->emit( 'shutdown', @_[ARG0 .. $#_] );
+  $self->emit( shutdown => @_[ARG0 .. $#_] );
 
   ## Drop sessions and we're spent.
   $self->call('unsubscribe');
@@ -560,7 +565,7 @@ sub __emitter_register {
     $self->__incr_ses_refc( $s_id );
   }
 
-  $kernel->post( $s_id, $self->event_prefix . 'registered', $self )
+  $kernel->post( $s_id => $self->event_prefix . 'registered' => $self )
 }
 
 sub __emitter_unregister {
@@ -572,7 +577,7 @@ sub __emitter_unregister {
   ##  - An unsub for 'all' means "stop sending events I haven't asked for 
   ##    by name"
 
-  @events = keys %{ $self->__emitter_reg_events } unless @events;
+  @events = $self->__emitter_reg_events->keys->all unless @events;
 
   my $s_id = $sender->ID;
 
