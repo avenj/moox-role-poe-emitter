@@ -666,7 +666,7 @@ MooX::Role::POE::Emitter - Pluggable POE event emitter role for cows
   sub do_something {
     my ($self, @things) = @_;
     # ... do some work ...
-    # Emit an event:
+    # ... emit an event:
     $self->emit( did_stuff => @things )
   }
 
@@ -697,12 +697,13 @@ MooX::Role::POE::Emitter - Pluggable POE event emitter role for cows
   sub emitted_did_stuff {
     my ($kernel, $self) = @_[KERNEL, OBJECT];
     ## Received 'did_stuff' from Emitter
-    my @args = @_[ARG0 .. $#_];
+    my @things = @_[ARG0 .. $#_];
+    # ...
   }
 
 =head1 DESCRIPTION
 
-A L<Moo::Role> for a L<POE> Observer Pattern implementation.
+A L<Moo::Role> for a L<POE> 'Observer Pattern' implementation.
 
 Consuming this role gives your class a L<POE::Session> capable of 
 processing events via loaded plugins and/or emitting them to registered 
@@ -719,13 +720,13 @@ L<MooX::Role::Pluggable> documentation for plugin-related details).
 
 You do not need to create your own L<POE::Session>; calling 
 L</_start_emitter> will spawn one for you.
-You also get some useful sugar over POE event dispatch (such as anonymous 
-coderef callbacks); see L</Methods>.
+
+You also get some useful sugar over POE event dispatch; see L</Methods>.
 
 =head2 Creating an Emitter
 
 L</SYNOPSIS> contains an emitter that uses B<set_$attrib> methods to
-configure itself when C<spawn()> is called; these attribs can, of course,
+configure itself when C<spawn()> is called; attributes can, of course,
 be set when your Emitter is constructed:
 
   my $emitter = MyEmitter->new(
@@ -740,15 +741,16 @@ be set when your Emitter is constructed:
 =head3 Attributes
 
 Most of these can be altered via B<set_$attrib> methods at any time before 
-L</_start_emitter> is called.
+L</_start_emitter> is called. Changing an emitter's configuration after it has
+been started may result in undesirable behavior ;-)
 
 =head4 alias
 
 B<alias> specifies the POE::Kernel alias used for our L<POE::Session>; 
 defaults to the stringified object.
 
-Set via B<set_alias> -- if the Emitter is running, a prefixed B<alias_set> 
-event is emitted.
+Set via B<set_alias>. If the emitter is running, a prefixed B<alias_set> 
+event is emitted to notify listeners that need to know where to reach the emitter.
 
 =head4 event_prefix
 
@@ -958,6 +960,8 @@ L</emit>.
 
 B<process()> calls registered plugin handlers for L</"PROCESS events">
 immediately; these are B<not> dispatched to listening sessions.
+
+Returns the same value as L<MooX::Role::Pluggable/"_pluggable_process">.
 
 See L<MooX::Role::Pluggable> for details on pluggable 
 event dispatch.
