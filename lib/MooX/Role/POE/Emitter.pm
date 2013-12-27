@@ -142,7 +142,7 @@ has shutdown_signal => (
   default   => sub { 'SHUTDOWN_EMITTER' },
 );
 
-## FIXME move these to internal objs:
+## FIXME swap these to internal objs?
 has __emitter_reg_sessions => (
   ## ->{ $session_id } = { refc => $ref_count, id => $id };
   lazy    => 1,
@@ -216,7 +216,7 @@ sub _start_emitter {
       / ],
 
       (
-        $self->has_object_states ? @{ $self->object_states } : ()
+        $self->has_object_states ? $self->object_states->all : ()
       ),
 
     ],
@@ -245,7 +245,7 @@ sub timer {
     unless defined $time
     and defined $event;
 
-  $self->call( '__emitter_timer_set', $time, $event, @args )
+  $self->call( __emitter_timer_set => $time, $event, @args )
 }
 
 sub __emitter_timer_set {
@@ -254,7 +254,7 @@ sub __emitter_timer_set {
 
   my $alarm_id = $poe_kernel->delay_set( $event, $time, @args );
 
-  $self->emit( $self->event_prefix . 'timer_set',
+  $self->emit( $self->event_prefix . 'timer_set' =>
     $alarm_id,
     $event,
     $time,
@@ -270,7 +270,7 @@ sub timer_del {
   confess "timer_del() expects an alarm ID"
     unless defined $alarm_id;
 
-  $self->call( '__emitter_timer_del', $alarm_id );
+  $self->call( __emitter_timer_del => $alarm_id );
 }
 
 sub __emitter_timer_del {
@@ -281,10 +281,10 @@ sub __emitter_timer_del {
 
   my ($event, undef, $params) = @deleted;
 
-  $self->emit( $self->event_prefix . 'timer_deleted',
-      $alarm_id,
-      $event,
-      @{$params||[]}
+  $self->emit( $self->event_prefix . 'timer_deleted' =>
+    $alarm_id,
+    $event,
+    @{ $params || [] }
   );
 
   $params
@@ -311,7 +311,7 @@ sub emit {
   ## Async NOTIFY event dispatch.
   my ($self, $event, @args) = @_;
 
-  $self->yield( '__emitter_notify', $event, @args );
+  $self->yield( __emitter_notify => $event, @args );
 
   $self
 }
@@ -320,7 +320,7 @@ sub emit_now {
   ## Synchronous NOTIFY event dispatch.
   my ($self, $event, @args) = @_;
 
-  $self->call( '__emitter_notify', $event, @args );
+  $self->call( __emitter_notify => $event, @args );
 
   $self
 }
@@ -332,7 +332,7 @@ sub process {
   ##  and return the EAT value.
 
   ## Dispatched to P_$event :
-  $self->_pluggable_process( 'PROCESS', $event, \@args )
+  $self->_pluggable_process( PROCESS => $event, \@args )
 }
 
 
@@ -366,12 +366,10 @@ sub __reg_ses_id {
 sub __emitter_drop_sessions {
   my ($self) = @_;
 
-  for my $id (keys %{ $self->__emitter_reg_sessions }) {
+  for my $id ($self->__emitter_reg_sessions->keys->all) {
     my $count = $self->__get_ses_refc($id);
     while ( $count-- > 0 ) {
-      $poe_kernel->refcount_decrement(
-        $id, E_TAG
-      )
+      $poe_kernel->refcount_decrement( $id, E_TAG )
     }
 
     delete $self->__emitter_reg_sessions->{$id};
@@ -417,8 +415,7 @@ sub __emitter_notify {
   }
 
   ## Received emitted 'shutdown', drop sessions.
-  $self->__emitter_drop_sessions
-    if $event eq 'shutdown';
+  $self->__emitter_drop_sessions if $event eq 'shutdown';
 }
 
 sub __emitter_start {
@@ -430,8 +427,8 @@ sub __emitter_start {
 
   $kernel->alias_set( $self->alias );
 
-  $kernel->sig('DIE', '__emitter_sigdie' );
-  $kernel->sig( $self->shutdown_signal, '__emitter_sig_shutdown' );
+  $kernel->sig( DIE => '__emitter_sigdie' );
+  $kernel->sig( $self->shutdown_signal => '__emitter_sig_shutdown' );
 
   unless ($sender == $kernel) {
     ## Have a parent session.
@@ -487,7 +484,7 @@ sub _emitter_default {
   $self->process( $event, @$args )
     unless index($event, '_') == 0
     or     index($event, 'emitter_') == 0
-    and $event =~ /^emitter_(?:started|stopped)$/;
+    and    $event =~ /(?:started|stopped)$/;
 }
 
 sub __emitter_sig_shutdown {
@@ -521,7 +518,7 @@ sub _shutdown_emitter {
   ## Opposite of _start_emitter
   my $self = shift;
 
-  $self->call( 'shutdown_emitter', @_ );
+  $self->call( shutdown_emitter => @_ );
 
   1
 }
@@ -535,7 +532,7 @@ sub __shutdown_emitter {
   $self->_pluggable_destroy;
 
   ## Notify sessions.
-  $self->emit( 'shutdown', @_[ARG0 .. $#_] );
+  $self->emit( shutdown => @_[ARG0 .. $#_] );
 
   ## Drop sessions and we're spent.
   $self->call('unsubscribe');
@@ -568,7 +565,7 @@ sub __emitter_register {
     $self->__incr_ses_refc( $s_id );
   }
 
-  $kernel->post( $s_id, $self->event_prefix . 'registered', $self )
+  $kernel->post( $s_id => $self->event_prefix . 'registered' => $self )
 }
 
 sub __emitter_unregister {
@@ -580,7 +577,7 @@ sub __emitter_unregister {
   ##  - An unsub for 'all' means "stop sending events I haven't asked for 
   ##    by name"
 
-  @events = keys %{ $self->__emitter_reg_events } unless @events;
+  @events = $self->__emitter_reg_events->keys->all unless @events;
 
   my $s_id = $sender->ID;
 
