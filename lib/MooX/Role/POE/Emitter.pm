@@ -638,6 +638,8 @@ sub __emitter_unregister {
 
 =pod
 
+=for Pod::Coverage has_\S+
+
 =head1 NAME
 
 MooX::Role::POE::Emitter - Pluggable POE event emitter role for cows
