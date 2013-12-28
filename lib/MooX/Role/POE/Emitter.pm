@@ -151,13 +151,13 @@ has __emitter_reg_sessions => (
 );
 
 
-## FIXME swap these to internal objs?
 has __emitter_reg_events => (
   ## ->{ $event }->{ $session_id } = 1
   lazy    => 1,
   is      => 'ro',
-  isa     => HashObj,
-  default => sub { hash },
+  isa     => TypedHash[HashObj],
+  coerce  => 1,
+  default => sub { hash_of HashObj },
 );
 
 
@@ -429,9 +429,8 @@ sub __emitter_notify {
   my %sessions;
 
   REG: for my $regev ('all', $event) {
-    if (exists $self->__emitter_reg_events->{$regev}) {
-      $sessions{$_} = 1
-        for keys %{ $self->__emitter_reg_events->{$regev} };
+    if (my $sessions = $self->__emitter_reg_events->get($regev)) {
+      $sessions->keys->map(sub { $sessions{$_} = 1 })
     }
   }
 
@@ -444,8 +443,7 @@ sub __emitter_notify {
   ## Dispatched to N_$event after our Session has been notified:
   unless ( $self->_pluggable_process('NOTIFY', $event, \@args) == EAT_ALL ) {
     ## Notify subscribed sessions.
-    $kernel->call( $_, $meth, @args )
-      for keys %sessions;
+    $kernel->call( $_, $meth, @args ) for keys %sessions;
   }
 
   ## Received emitted 'shutdown', drop sessions.
@@ -471,7 +469,7 @@ sub __emitter_start {
     $self->__reg_ses_id( $s_id );
     $self->__incr_ses_refc( $s_id );
 
-    ## subscribe parent session to all notification events.
+    ## subscribe parent session to all notification events
     $self->__emitter_reg_events->{all}->{ $s_id } = 1;
 
     ## Detach child session.
