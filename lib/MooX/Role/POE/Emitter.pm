@@ -295,7 +295,7 @@ sub __emitter_timer_del {
 sub yield {
   my ($self, @args) = @_;
 
-  $poe_kernel->post( $self->session_id, @args );
+  $poe_kernel->post( $self->session_id => @args );
 
   $self
 }
@@ -303,7 +303,7 @@ sub yield {
 sub call {
   my ($self, @args) = @_;
 
-  $poe_kernel->call( $self->session_id, @args );
+  $poe_kernel->call( $self->session_id => @args );
 
   $self
 }
@@ -363,14 +363,13 @@ sub __decr_ses_refc {
 
   my $regsess_obj = $self->__emitter_reg_sessions->get($sess_id);
   unless (defined $regsess_obj) {
-    carp "BUG; attempted to decrease nonexistant refcount for '$sess_id'";
-    return
+    confess "BUG; attempted to decrease nonexistant refcount for '$sess_id'"
   }
 
   $self->__emitter_reg_sessions->set($sess_id =>
     do { 
       my $refc = $regsess_obj->refcount - 1;
-      $refc = 0 if $refc < 0;  # FIXME delete instead?
+      $refc = 0 if $refc < 0;  # FIXME delete (and return above) instead?
       MooX::Role::POE::Emitter::RegisteredSession->new(
         id       => $sess_id,
         refcount => $refc,
@@ -423,27 +422,26 @@ sub __emitter_notify {
   my $prefix = $self->event_prefix;
 
   ## May have event_prefix (such as $prefix.'plugin_error')
-  substr($event, 0, length($prefix), '')
-    if index($event, $prefix) == 0;
+  substr($event, 0, length($prefix), '') if index($event, $prefix) == 0;
 
   my %sessions;
 
-  REG: for my $regev ('all', $event) {
-    if (my $sessions = $self->__emitter_reg_events->get($regev)) {
-      $sessions->keys->map(sub { $sessions{$_} = 1 })
+  REG: for my $registered_ev ('all', $event) {
+    if (my $sess_hash = $self->__emitter_reg_events->get($registered_ev)) {
+      $sessions{$_} = 1 for keys %$sess_hash;
     }
   }
 
   my $meth = $prefix . $event;
 
   ## Our own session will get ->event_prefix . $event first
-  $kernel->call( $_[SESSION], $meth, @args )
+  $kernel->call( $_[SESSION] => $meth, @args )
     if delete $sessions{ $_[SESSION]->ID };
 
   ## Dispatched to N_$event after our Session has been notified:
   unless ( $self->_pluggable_process('NOTIFY', $event, \@args) == EAT_ALL ) {
     ## Notify subscribed sessions.
-    $kernel->call( $_, $meth, @args ) for keys %sessions;
+    $kernel->call( $_ => $meth, @args ) for keys %sessions;
   }
 
   ## Received emitted 'shutdown', drop sessions.
@@ -476,7 +474,7 @@ sub __emitter_start {
     $kernel->detach_myself;
   }
 
-  $self->call( 'emitter_started' );
+  $self->call( emitter_started => );
 
   $self
 }
@@ -502,7 +500,7 @@ sub __emitter_disp_default {
     $_[STATE] = $event;
     goto $event
   } else {
-    $self->call( '__emitter_real_default', $event, $args );
+    $self->call( __emitter_real_default => $event, $args );
   }
 }
 
@@ -521,7 +519,7 @@ sub _emitter_default {
 
 sub __emitter_sig_shutdown {
   my ($kernel, $self) = @_[KERNEL, OBJECT];
-  $self->yield('shutdown_emitter', @_[ARG2 .. $#_] )
+  $self->yield( shutdown_emitter => @_[ARG2 .. $#_] )
 }
 
 sub __emitter_sigdie {
@@ -543,7 +541,7 @@ sub __emitter_stop {
   ## _stop handler
   my ($kernel, $self) = @_[KERNEL, OBJECT];
 
-  $self->call( 'emitter_stopped' );
+  $self->call( emitter_stopped => () );
 }
 
 sub _shutdown_emitter {
@@ -567,7 +565,7 @@ sub __shutdown_emitter {
   $self->emit( shutdown => @_[ARG0 .. $#_] );
 
   ## Drop sessions and we're spent.
-  $self->call('unsubscribe');
+  $self->call( unsubscribe => () );
   $self->__emitter_drop_sessions;
 }
 
