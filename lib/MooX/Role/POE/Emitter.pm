@@ -10,6 +10,7 @@ use List::Objects::Types -all;
 use Types::Standard      -types;
 
 use MooX::Role::Pluggable::Constants;
+use MooX::Role::POE::Emitter::RegisteredSession;
 
 use POE;
 
@@ -142,15 +143,15 @@ has shutdown_signal => (
   default   => sub { 'SHUTDOWN_EMITTER' },
 );
 
-## FIXME swap these to internal objs?
 has __emitter_reg_sessions => (
-  ## ->{ $session_id } = { refc => $ref_count, id => $id };
   lazy    => 1,
   is      => 'ro',
-  isa     => HashObj,
-  default => sub { hash },
+  isa     => TypedHash[Object],
+  default => sub { hash_of Object },
 );
 
+
+## FIXME swap these to internal objs?
 has __emitter_reg_events => (
   ## ->{ $event }->{ $session_id } = 1
   lazy    => 1,
@@ -341,25 +342,58 @@ sub process {
 
 sub __incr_ses_refc {
   my ($self, $sess_id) = @_;
-  ++$self->__emitter_reg_sessions->{$sess_id}->{refc}
+
+  my $regsess_obj = $self->__emitter_reg_sessions->get($sess_id);
+  unless (defined $regsess_obj) {
+    confess "BUG; attempted to increase nonexistant refcount for '$sess_id'";
+  }
+
+  $self->__emitter_reg_sessions->set($sess_id =>
+    MooX::Role::POE::Emitter::RegisteredSession->new(
+      id       => $sess_id,
+      refcount => $regsess_obj->refcount + 1,
+    )
+  );
+
+  $self->__emitter_reg_sessions->get($sess_id)->refcount
 }
 
 sub __decr_ses_refc {
   my ($self, $sess_id) = @_;
-  --$self->__emitter_reg_sessions->{$sess_id}->{refc};
-  $self->__emitter_reg_sessions->{$sess_id}->{refc} = 0
-    unless $self->__emitter_reg_sessions->{$sess_id}->{refc} > 0;
+
+  my $regsess_obj = $self->__emitter_reg_sessions->get($sess_id);
+  unless (defined $regsess_obj) {
+    carp "BUG; attempted to decrease nonexistant refcount for '$sess_id'";
+    return
+  }
+
+  $self->__emitter_reg_sessions->set($sess_id =>
+    do { 
+      my $refc = $regsess_obj->refcount - 1;
+      $refc = 0 if $refc < 0;  # FIXME delete instead?
+      MooX::Role::POE::Emitter::RegisteredSession->new(
+        id       => $sess_id,
+        refcount => $refc,
+      )
+    },
+  );
 }
 
 sub __get_ses_refc {
   my ($self, $sess_id) = @_;
-  return unless exists $self->__emitter_reg_sessions->{$sess_id};
-  $self->__emitter_reg_sessions->{$sess_id}->{refc} || 0
+  return unless $self->__emitter_reg_sessions->exists($sess_id);
+  $self->__emitter_reg_sessions->get($sess_id)->refcount
 }
 
 sub __reg_ses_id {
   my ($self, $sess_id) = @_;
-  $self->__emitter_reg_sessions->{$sess_id}->{id} = $sess_id
+  return if $self->__emitter_reg_sessions->exists($sess_id);
+  $self->__emitter_reg_sessions->set($sess_id =>
+    MooX::Role::POE::Emitter::RegisteredSession->new(
+      id       => $sess_id,
+      refcount => 0
+    )
+  );
 }
 
 
@@ -372,7 +406,7 @@ sub __emitter_drop_sessions {
       $poe_kernel->refcount_decrement( $id, E_TAG )
     }
 
-    delete $self->__emitter_reg_sessions->{$id};
+    $self->__emitter_reg_sessions->delete($id)
   }
 
   1
@@ -434,8 +468,8 @@ sub __emitter_start {
     ## Have a parent session.
     my $s_id = $sender->ID;
     $kernel->refcount_increment( $s_id, E_TAG );
-    $self->__incr_ses_refc( $s_id );
     $self->__reg_ses_id( $s_id );
+    $self->__incr_ses_refc( $s_id );
 
     ## subscribe parent session to all notification events.
     $self->__emitter_reg_events->{all}->{ $s_id } = 1;
