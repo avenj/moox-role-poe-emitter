@@ -155,9 +155,9 @@ has __emitter_reg_events => (
   ## ->{ $event }->{ $session_id } = 1
   lazy    => 1,
   is      => 'ro',
-  isa     => TypedHash[HashObj],
+  isa     => TypedHash[ TypedHash[Int] ],
   coerce  => 1,
-  default => sub { hash_of HashObj },
+  default => sub { hash_of TypedHash[Int] },
 );
 
 
