@@ -474,7 +474,7 @@ sub __emitter_start {
     $kernel->detach_myself;
   }
 
-  $self->call( emitter_started => );
+  $self->call('emitter_started');
 
   $self
 }
