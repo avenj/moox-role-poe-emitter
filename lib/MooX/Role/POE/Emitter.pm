@@ -243,8 +243,7 @@ sub timer {
   my ($self, $time, $event, @args) = @_;
 
   confess "timer() expected at least a time and event name"
-    unless defined $time
-    and defined $event;
+    unless defined $time and defined $event;
 
   $self->call( __emitter_timer_set => $time, $event, @args )
 }
@@ -255,7 +254,7 @@ sub __emitter_timer_set {
 
   my $alarm_id = $poe_kernel->delay_set( $event, $time, @args );
 
-  $self->emit( $self->event_prefix . 'timer_set' =>
+  $self->emit( $self->event_prefix . 'timer_set',
     $alarm_id,
     $event,
     $time,
@@ -282,7 +281,7 @@ sub __emitter_timer_del {
 
   my ($event, undef, $params) = @deleted;
 
-  $self->emit( $self->event_prefix . 'timer_deleted' =>
+  $self->emit( $self->event_prefix . 'timer_deleted',
     $alarm_id,
     $event,
     @{ $params || [] }
@@ -541,7 +540,7 @@ sub __emitter_stop {
   ## _stop handler
   my ($kernel, $self) = @_[KERNEL, OBJECT];
 
-  $self->call( emitter_stopped => () );
+  $self->call('emitter_stopped');
 }
 
 sub _shutdown_emitter {
@@ -726,7 +725,7 @@ MooX::Role::POE::Emitter - Pluggable POE event emitter role for cows
     );
 
     ## Subscribe to all events from $alias_or_sessionID:
-    $poe_kernel->post( 
+    $poe_kernel->call( 
       $alias_or_sessionID => subscribe => 'all'
     );
   }
