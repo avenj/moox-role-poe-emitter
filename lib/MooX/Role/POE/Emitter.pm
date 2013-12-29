@@ -428,14 +428,14 @@ sub __emitter_notify {
 
   REG: for my $registered_ev ('all', $event) {
     if (my $sess_hash = $self->__emitter_reg_events->get($registered_ev)) {
-      $sessions{$_} = 1 for keys %$sess_hash;
+      $sessions{$_} = 1 for $sess_hash->keys->all
     }
   }
 
   my $meth = $prefix . $event;
 
   ## Our own session will get ->event_prefix . $event first
-  $kernel->call( $_[SESSION] => $meth, @args )
+  $kernel->call( $_[SESSION], $meth, @args )
     if delete $sessions{ $_[SESSION]->ID };
 
   ## Dispatched to N_$event after our Session has been notified:
