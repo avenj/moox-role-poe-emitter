@@ -295,7 +295,7 @@ sub __emitter_timer_del {
 sub yield {
   my ($self, @args) = @_;
 
-  $poe_kernel->post( $self->session_id => @args );
+  $poe_kernel->post( $self->session_id, @args );
 
   $self
 }
@@ -303,7 +303,7 @@ sub yield {
 sub call {
   my ($self, @args) = @_;
 
-  $poe_kernel->call( $self->session_id => @args );
+  $poe_kernel->call( $self->session_id, @args );
 
   $self
 }
@@ -417,7 +417,7 @@ sub __emitter_drop_sessions {
 sub __emitter_notify {
   ## Dispatch a NOTIFY event
   my ($kernel, $self) = @_[KERNEL, OBJECT];
-  my ($event, @args) = @_[ARG0 .. $#_];
+  my ($event, @args)  = @_[ARG0 .. $#_];
 
   my $prefix = $self->event_prefix;
 
@@ -595,7 +595,7 @@ sub __emitter_register {
     $self->__incr_ses_refc( $s_id );
   }
 
-  $kernel->post( $s_id => $self->event_prefix . 'registered' => $self )
+  $kernel->post( $s_id => $self->event_prefix . 'registered', $self )
 }
 
 sub __emitter_unregister {
