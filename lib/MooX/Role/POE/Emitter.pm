@@ -647,7 +647,6 @@ MooX::Role::POE::Emitter - Pluggable POE event emitter role for cows
 
   ## A POE::Session that can broadcast events to listeners:
   package My::EventEmitter;
-
   use POE;
   use Moo;
   with 'MooX::Role::POE::Emitter';
@@ -718,8 +717,8 @@ MooX::Role::POE::Emitter - Pluggable POE event emitter role for cows
       ## Set up a Session, etc
       object_states => [
         $self => [
-            'emitted_my_event',
-            . . .
+            'emitted_did_stuff',
+            # ...
         ],
       ],
     );
