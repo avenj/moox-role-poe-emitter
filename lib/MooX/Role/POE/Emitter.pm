@@ -33,7 +33,7 @@ has alias => (
   isa       => Str,
   predicate => 'has_alias',
   writer    => 'set_alias',
-  default   => sub { "$_[0]" },
+  default   => sub { my $self = shift; "$self" },
 );
 
 around set_alias => sub {
@@ -102,8 +102,8 @@ sub _trigger_object_states {
     unsubscribe
   / )->map(sub { $_ => 1 })->inflate;
 
-  for my $pair ($states->tuples(2)->all) {
-    my (undef, $events) = @$pair;
+  my $itr = $states->natatime(2);
+  while (my (undef, $events) = $itr->()) {
     my $evarr = reftype $events eq 'ARRAY' ? array(@$events) 
                 : reftype $events eq 'HASH'  ? array(keys %$events)
                 : confess "Expected ARRAY or HASH but got $events";
