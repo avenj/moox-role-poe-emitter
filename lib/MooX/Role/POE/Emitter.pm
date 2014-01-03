@@ -237,7 +237,7 @@ around '_pluggable_event' => sub {
 };
 
 
-### Methods.
+### Public:
 
 sub timer {
   my ($self, $time, $event, @args) = @_;
@@ -339,6 +339,23 @@ sub process {
 
 ## Session ref-counting bits.
 
+sub __get_ses_refc {
+  my ($self, $sess_id) = @_;
+  return unless $self->__emitter_reg_sessions->exists($sess_id);
+  $self->__emitter_reg_sessions->get($sess_id)->refcount
+}
+
+sub __reg_ses_id {
+  my ($self, $sess_id) = @_;
+  return if $self->__emitter_reg_sessions->exists($sess_id);
+  $self->__emitter_reg_sessions->set($sess_id =>
+    MooX::Role::POE::Emitter::RegisteredSession->new(
+      id       => $sess_id,
+      refcount => 0
+    )
+  );
+}
+
 sub __incr_ses_refc {
   my ($self, $sess_id) = @_;
 
@@ -376,24 +393,6 @@ sub __decr_ses_refc {
     },
   );
 }
-
-sub __get_ses_refc {
-  my ($self, $sess_id) = @_;
-  return unless $self->__emitter_reg_sessions->exists($sess_id);
-  $self->__emitter_reg_sessions->get($sess_id)->refcount
-}
-
-sub __reg_ses_id {
-  my ($self, $sess_id) = @_;
-  return if $self->__emitter_reg_sessions->exists($sess_id);
-  $self->__emitter_reg_sessions->set($sess_id =>
-    MooX::Role::POE::Emitter::RegisteredSession->new(
-      id       => $sess_id,
-      refcount => 0
-    )
-  );
-}
-
 
 sub __emitter_drop_sessions {
   my ($self) = @_;
