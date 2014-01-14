@@ -424,7 +424,7 @@ sub __emitter_notify {
 
   my %sessions;
 
-  REG: for my $registered_ev ('all', $event) {
+  for my $registered_ev ('all', $event) {
     if (my $sess_hash = $self->__emitter_reg_events->get($registered_ev)) {
       $sess_hash->keys->visit(sub { $sessions{$_} = 1 })
     }
