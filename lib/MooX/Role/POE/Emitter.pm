@@ -489,7 +489,7 @@ sub __emitter_reset_alias {
 
 sub __emitter_disp_default {
   my ($kernel, $self) = @_[KERNEL, OBJECT];
-  my ($event, $args) = @_[ARG0, ARG1];
+  my ($event, $args)  = @_[ARG0, ARG1];
 
   if (ref $event eq 'CODE') {
     ## Anonymous coderef callback.
@@ -782,6 +782,9 @@ Most of these can be altered via B<set_$attrib> methods at any time before
 L</_start_emitter> is called. Changing an emitter's configuration after it has
 been started may result in undesirable behavior ;-)
 
+Public attributes provide B<has_> prefixed predicates; e.g.
+B<has_event_prefix>.
+
 =head4 alias
 
 B<alias> specifies the POE::Kernel alias used for our L<POE::Session>; 
@@ -797,7 +800,7 @@ dispatched to listening sessions. It is also used for the plugin
 pipeline's internal events; see L<MooX::Role::Pluggable/_pluggable_event> 
 for details.
 
-Defaults to I<emitted_>
+Defaults to C<emitted_>
 
 Set via B<set_event_prefix>
 
