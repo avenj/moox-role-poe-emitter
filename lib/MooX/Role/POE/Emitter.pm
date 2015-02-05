@@ -11,7 +11,6 @@ use List::Objects::Types -all;
 use Types::Standard      -types;
 
 use MooX::Role::Pluggable::Constants;
-use MooX::Role::POE::Emitter::RegisteredSession;
 
 use POE;
 
@@ -339,11 +338,16 @@ sub process {
 
 
 ## Session ref-counting bits.
+{ package MooX::Role::POE::Emitter::RegisteredSession;
+  use Moo;
+  has [qw/id refcount/] => ( is => 'rw', required => 1 );
+}
 
 sub __get_ses_refc {
   my ($self, $sess_id) = @_;
-  return unless $self->__emitter_reg_sessions->exists($sess_id);
-  $self->__emitter_reg_sessions->get($sess_id)->refcount
+  my $regsess_obj = $self->__emitter_reg_sessions->get($sess_id);
+  return unless $regsess_obj;
+  $regsess_obj->refcount
 }
 
 sub __reg_ses_id {
