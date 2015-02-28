@@ -52,7 +52,7 @@ my $emitter_expect = {
 
   sub spawn {
     my ($self) = @_;
-    $self->_start_emitter;
+    $self->_start_emitter
   }
 
   sub shutdown {
@@ -181,7 +181,7 @@ my $emitter = MyEmitter->new;
 
 
 sub _start {
-  $emitter->spawn;
+  ok( $emitter->spawn == $emitter, '_start_emitter returned emitter obj' );
   my $sess_id;
 
   ## session_id()
