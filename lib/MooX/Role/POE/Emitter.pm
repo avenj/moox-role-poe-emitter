@@ -1,6 +1,6 @@
 package MooX::Role::POE::Emitter;
 
-use strictures 1;
+use strictures 2;
 
 use feature 'state';
 use Carp;
