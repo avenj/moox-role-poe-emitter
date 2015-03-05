@@ -1,5 +1,4 @@
 use Test::More tests => 8;
-use Test::Exception;
 use strict; use warnings FATAL => 'all';
 
 {
@@ -10,23 +9,16 @@ use strict; use warnings FATAL => 'all';
   with 'MooX::Role::POE::Emitter';
 }
 
-dies_ok( sub { MyEmitter->new(
-    object_states => '',
-  ) }, 'empty string object_states dies'
-);
+eval {; MyEmitter->new( object_states => '' ) };
+ok $@, 'empty string object_states dies';
 
 my $emitter = MyEmitter->new;
+for (qw/ _start _stop _default subscribe unsubscribe /) {
+  eval {; $emitter->set_object_states([ $emitter => [ $_ ] ]) };
+  ok $@, "disallowed state $_ dies";
+}
 
-dies_ok( sub { $emitter->set_object_states(
-    [ $emitter => [ $_ ] ]
-  ) }, "disallowed state $_ dies"
-) for qw/
-  _start
-  _stop
-  _default
-  subscribe
-  unsubscribe
-/;
-
-dies_ok( sub { $emitter->timer }, 'empty timer() call dies' );
-dies_ok( sub { $emitter->timer_del }, 'empty timer_del() call dies' );
+eval {; $emitter->timer };
+ok $@, 'empty timer() call dies';
+eval {; $emitter->timer_del };
+ok $@, 'empty timer_del() call dies';
