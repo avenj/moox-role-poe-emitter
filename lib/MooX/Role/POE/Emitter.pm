@@ -23,7 +23,7 @@ sub E_TAG () { 'Emitter Running' }
 =cut
 
 
-use Moo::Role; use MooX::late;
+use Moo::Role;
 with 'MooX::Role::Pluggable';
 
 
@@ -1099,12 +1099,14 @@ L<Role::Tiny>
 
 Jon Portnoy <avenj@cobaltirc.org>
 
-Written from the ground up, but conceptually derived from 
-L<POE::Component::Syndicator>-0.06 by BINGOS, HINRIK, 
-APOCAL et al. That will probably do you for non-Moo(se) use cases; I 
-needed something cow-like that worked with L<MooX::Role::Pluggable>. 
+Written from the ground up, but conceptually derived from
+L<POE::Component::Syndicator>-0.06 copyright Hinrik Orn Sigurosson (HINRIK),
+Chris Williams (BINGOS), APOCAL et al -- that will probably do you for
+non-Moo(se) use cases; I needed something cow-like that worked with
+L<MooX::Role::Pluggable>. 
 
-Licensed under the same terms as perl5
+Licensed under the same terms as Perl 5; see the license that came with your
+Perl distribution for details.
 
 =cut
 
