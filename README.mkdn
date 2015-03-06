@@ -136,6 +136,9 @@ Most of these can be altered via **set\_$attrib** methods at any time before
 ["\_start\_emitter"](#_start_emitter) is called. Changing an emitter's configuration after it has
 been started may result in undesirable behavior ;-)
 
+Public attributes provide **has\_** prefixed predicates; e.g.
+**has\_event\_prefix**.
+
 #### alias
 
 **alias** specifies the POE::Kernel alias used for our [POE::Session](https://metacpan.org/pod/POE::Session); 
@@ -151,7 +154,7 @@ dispatched to listening sessions. It is also used for the plugin
 pipeline's internal events; see ["\_pluggable\_event" in MooX::Role::Pluggable](https://metacpan.org/pod/MooX::Role::Pluggable#pluggable_event) 
 for details.
 
-Defaults to _emitted\__
+Defaults to `emitted_`
 
 Set via **set\_event\_prefix**
 
@@ -450,9 +453,11 @@ For details regarding Moo classes and Roles, see [Moo](https://metacpan.org/pod/
 
 Jon Portnoy <avenj@cobaltirc.org>
 
-Written from the ground up, but conceptually derived from 
-[POE::Component::Syndicator](https://metacpan.org/pod/POE::Component::Syndicator)-0.06 by BINGOS, HINRIK, 
-APOCAL et al. That will probably do you for non-Moo(se) use cases; I 
-needed something cow-like that worked with [MooX::Role::Pluggable](https://metacpan.org/pod/MooX::Role::Pluggable). 
+Written from the ground up, but conceptually derived from
+[POE::Component::Syndicator](https://metacpan.org/pod/POE::Component::Syndicator)-0.06 copyright Hinrik Orn Sigurosson (HINRIK),
+Chris Williams (BINGOS), APOCAL et al -- that will probably do you for
+non-Moo(se) use cases; I needed something cow-like that worked with
+[MooX::Role::Pluggable](https://metacpan.org/pod/MooX::Role::Pluggable). 
 
-Licensed under the same terms as perl5
+Licensed under the same terms as Perl 5; see the license that came with your
+Perl distribution for details.

@@ -1,5 +1,19 @@
 Revision history for Perl module MooX::Role::POE::Emitter
 
+1.001002 2015-03-05
+
+  - Test & POD improvements
+
+  - Depend on Moo-1.6 for 'coerce'; remove dependency on MooX::late
+
+  - 'use strictures 2;' for saner fatal warnings behavior
+
+  - Inline the RegisteredSession class (never part of public API)
+
+  - Packaging; switch to 'cpanfile' dependency list
+
+  - Remove dependency on Test::Exception
+
 1.001001 2014-08-16
 
   - Stable release; no significant code changes.
