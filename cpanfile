@@ -8,8 +8,7 @@ requires "strictures"   => "2";
 requires "List::Objects::Types"     => "1";
 requires "List::Objects::WithUtils" => "2.007";
 
-requires "Moo"                      => "1";
-requires "MooX::late"               => "0.014";
+requires "Moo"                      => "1.006";
 requires "MooX::Role::Pluggable"    => "1";
 requires "Class::Method::Modifiers" => "0";
 
