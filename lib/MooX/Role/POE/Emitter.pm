@@ -646,7 +646,7 @@ sub __emitter_unregister {
 
 =head1 NAME
 
-MooX::Role::POE::Emitter - Pluggable POE event emitter role for cows
+MooX::Role::POE::Emitter - Turn your Moo class into a pluggable POE event emitter
 
 =head1 SYNOPSIS
 
